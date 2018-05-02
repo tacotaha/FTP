@@ -1,20 +1,20 @@
 CC=gcc
-CFLAGS=-Wall -std=c99 -pedantic
-EXEC=ftp_server ftp_client
+CFLAGS=-Werror -Wall -std=c99 -pedantic
+EXEC=server client
 
 all: client server
 
-server: connect.o stream.o ftp_server.o
-	$(CC) $(CFLAGS) connect.o stream.o ftp_server.o -o ftp_server -lpthread
+server: connect.o stream.o server.o
+	$(CC) $(CFLAGS) connect.o stream.o server.o -o server -lpthread
 
-client: connect.o stream.o ftp_client.o
-	$(CC) $(CFLAGS) connect.o stream.o ftp_client.o -o ftp_client -lpthread
+client: connect.o stream.o client.o
+	$(CC) $(CFLAGS) connect.o stream.o client.o -o client -lpthread
 
-ftp_server.o: Server/FTP_Server.c
-	$(CC) $(CFLAGS) -c Server/FTP_Server.c -o ftp_server.o
+server.o: Server.c
+	$(CC) $(CFLAGS) -c Server.c -o server.o
 
-ftp_client.o: Client/FTP_Client.c
-	$(CC) $(CFLAGS) -c Client/FTP_Client.c -o ftp_client.o
+client.o: Client.c
+	$(CC) $(CFLAGS) -c Client.c -o client.o
 
 connect.o: Stream/Connect.c
 	$(CC) $(CFLAGS) -c Stream/Connect.c -o connect.o
