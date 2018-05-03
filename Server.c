@@ -10,6 +10,7 @@
 
 #include "Stream/Connect.h"
 #include "Stream/Stream.h"
+#include "FTP/FTP.h"
 
 int main(int argc, char* argv[]){
   int server_socket, client_socket,
