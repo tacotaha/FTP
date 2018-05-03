@@ -13,14 +13,23 @@
 
 
 void* handle_client(void* args){
-  int bytes_read = 0, client_socket = *(int*) args;
+  int bytes_read = 0, client_socket = *(int*) args, bytes_sent = 0;
   char message[BUF];
-  Command c;
-  //send(client_socket, welcome, strlen(welcome), 0);
+  Command c1;
+
+  if((bytes_sent = send_response("220", welcome_message, client_socket)) <= 0){
+    perror("Welcome Message()\n");
+    close(client_socket);
+    exit(-1);
+  }
+
+  /* Ensure the user's login status */
+  while(handle_login(client_socket));
+  
   while( (bytes_read = recv(client_socket,message,sizeof(message),0)) > 0 ){
     message[bytes_read] = 0x0;
     printf("Client sent: %s\n", message);
-    get_command(&c, client_socket, 1);
+    get_command(&c1, client_socket, 1);
     memset(message, 0, MSG_LEN);
   }
   

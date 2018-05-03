@@ -13,7 +13,7 @@
 #define BUF2 2048
 #define BUF3 4096
 #define MAX_CLIENTS 100
-#define PORT 4444
+#define PORT_NO 4444
 #define IP "127.0.0.1"
 #define BACKLOG 10
 
