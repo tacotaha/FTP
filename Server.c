@@ -14,7 +14,7 @@
 
 int main(int argc, char* argv[]){
   int server_socket, client_socket,
-    client_count = 0, port = PORT;
+    client_count = 0, port = PORT_NO;
   struct sockaddr_in server;
   char out_buffer[BUF], in_buffer[BUF];
   pthread_t t;
