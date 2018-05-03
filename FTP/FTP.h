@@ -13,8 +13,7 @@
 #define PASSWORD password123
 
 static const char* USERS[NUM_USERS] = {"Euclid", "Newton", "Gauss", "Euler", "Hilbert"};
-static const char* PASSWORDS[NUM_USERS] = {"geometry", "calculus", "electrostatics",
-				    "konigsberg", "spaces"};
+static const char* PASSWORDS[NUM_USERS] = {"geometry", "calculus", "electrostatics", "konigsberg", "spaces"};
 
 static const char* welcome_message = "-=(<*>)=-.:. (( Welcome to The FTP server)) .:.-=(<*>)=-";
 
