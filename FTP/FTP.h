@@ -10,29 +10,11 @@
 #define NUM_COMMANDS 14
 #define NUM_USERS 5
 
-#define PASSWORD password123
-
-static const char* USERS[NUM_USERS] = {"Euclid", "Newton", "Gauss", "Euler", "Hilbert"};
-static const char* PASSWORDS[NUM_USERS] = {"geometry", "calculus", "electrostatics", "konigsberg", "spaces"};
-
-static const char* welcome_message = "-=(<*>)=-.:. (( Welcome to The FTP server)) .:.-=(<*>)=-";
-
-static const char* COMMAND_STRING[14] = {
-  "ABOR", /* Abort previous FTP command */
-  "LIST", /* List file and directories */
-  "DELE", /* Delete a file */
-  "RMD",  /* Remove a directory */
-  "MKD",  /* Create a directory */
-  "PWD",  /* Print working directory */
-  "PASS", /* Send password (NOTE: THE FTP USES PLAINTEXT PASSWORDS)*/
-  "PORT", /* Request open port on specific IP addr/Port No */
-  "QUIT", /* Log off of server */
-  "RETR", /* Retrieve a file */
-  "STOR", /* Send or put a file */
-  "SYST", /* Identify system type */
-  "TYPE", /* Specify type (A for ASCII, I for binary) */
-  "USER"  /* Send Username */
-};
+/* Defined in FTP.c */
+extern const char* USERS[NUM_USERS];
+extern const char* PASSWORDS[NUM_USERS];
+extern const char* welcome_message;
+extern const char* COMMAND_STRING[14];
 
 typedef enum Command_Enum{
   ABOR, 

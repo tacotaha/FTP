@@ -4,6 +4,27 @@
 #include "../Stream/Stream.h"
 #include "FTP.h"
 
+const char* USERS[NUM_USERS] = {"Euclid", "Newton", "Gauss", "Euler", "Hilbert"};
+const char* PASSWORDS[NUM_USERS] = {"geometry", "calculus", "electrostatics", "konigsberg", "spaces"};
+const char* welcome_message = "-=(<*>)=-.:. (( Welcome to The FTP server)) .:.-=(<*>)=-";
+const char* COMMAND_STRING[14] = {
+  "ABOR", /* Abort previous FTP command */
+  "LIST", /* List file and directories */
+  "DELE", /* Delete a file */
+  "RMD",  /* Remove a directory */
+  "MKD",  /* Create a directory */
+  "PWD",  /* Print working directory */
+  "PASS", /* Send password (NOTE: THE FTP USES PLAINTEXT PASSWORDS)*/
+  "PORT", /* Request open port on specific IP addr/Port No */
+  "QUIT", /* Log off of server */
+  "RETR", /* Retrieve a file */
+  "STOR", /* Send or put a file */
+  "SYST", /* Identify system type */
+  "TYPE", /* Specify type (A for ASCII, I for binary) */
+  "USER"  /* Send Username */
+};
+
+
 int get_response(char* buffer, int sockfd, int print){
   int bytes_rcvd = recv(sockfd, buffer, sizeof(buffer), 0);
   if(bytes_rcvd > 0){

@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -std=c99 -pedantic
+CFLAGS=-Wall -Werror -std=c99 -pedantic
 EXEC=server client
 
 all: client server
