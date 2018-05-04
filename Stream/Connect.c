@@ -18,7 +18,7 @@ int create_socket(void){
   return sock;
 }
 
-struct sockaddr_in create_socket_address(int port, char* ip_addr){
+struct sockaddr_in create_socket_address(int port, const char* ip_addr){
   struct sockaddr_in sock;
   sock.sin_family = AF_INET;
   sock.sin_port = htons(port);
@@ -30,10 +30,8 @@ int bind_connection(int socket, struct sockaddr* sa){
   int status = bind(socket,sa,sizeof(*sa));
   if(status >= 0)
     printf("[+] Address successfully bound to socket.\n");
-  else{
-    perror("bind_conection");
-    exit(1);
-  }
+  else
+    printf("[-] Failed to bind address to socket.\n");
   return status;
 }
 
@@ -41,10 +39,8 @@ int listen_for_connection(int listener_socket, int backlog){
   int status = listen(listener_socket, backlog);
   if(status == 0)
     printf("[+] Listening...\n");
-  else{
-    perror("listen_for_connection");
-    exit(1);
-  }
+  else
+    printf("[+] Failed to listen for connection\n");
   return status;
 }
 
@@ -64,9 +60,7 @@ int connect_to_server(int client_socket, struct sockaddr* server){
   int status = connect(client_socket,server,sizeof(*server));
   if(status == 0)
     printf("[+] Address successfully bound to socket.\n");
-  else{
-    perror("connect_to_server");
-    exit(1);
-  }
+  else
+    printf("[-] Address unsuccessfully bound to socket.\n");
   return status;
 }

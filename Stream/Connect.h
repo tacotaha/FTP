@@ -20,7 +20,7 @@ int create_socket(void);
  * @Return: An Pv4 AF_INET socket struct as defined in <netinet/in.h>
  * Create a socket address structure of family AF_INET 
  */
-struct sockaddr_in create_socket_address(int port, char* ip_addr);
+struct sockaddr_in create_socket_address(int port, const char* ip_addr);
 
 
 /* 

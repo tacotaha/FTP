@@ -18,7 +18,6 @@ int main(int argc, char* argv[]){
   struct sockaddr_in server;
   char out_buffer[BUF], in_buffer[BUF];
   pthread_t t;
-  //pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
   char* ip = IP;
   
   memset(&server_socket,0x0,sizeof(server_socket));
@@ -32,8 +31,11 @@ int main(int argc, char* argv[]){
   socklen_t sckln = sizeof(struct sockaddr_in);
 
   /*=======================================Main Loop========================================*/
-  while( (client_socket = accept(server_socket,(struct sockaddr *)&server,&sckln))){    
-    if(pthread_create(&t, NULL, handle_client, &client_socket) < 0){
+  while( (client_socket = accept(server_socket,(struct sockaddr *)&server,&sckln))){
+    Server_Arg server_arg;
+    server_arg.sockfd = client_socket;
+    server_arg.ip = ip;
+    if(pthread_create(&t, NULL, handle_client, &server_arg) < 0){
       perror("pthread_create()");
       return -1;
     }

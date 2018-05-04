@@ -91,7 +91,6 @@ int read_command(Command* command, FILE* fp);
  */
 int get_command(Command* command, int sockfd, int print);
 
-
 /*
   Fill a command struct with the specified parameters.
   
@@ -110,6 +109,17 @@ void build_command(Command* command, char* cmd, char* arg);
  */
 int handle_login(int sockfd);
 
+/*
+  Creates a socket for use as a data port,
+  Binds the socket to the data port, and ip
+  Sends the data port and ip to the server. 
+  
+  @param cmd_port : The port command port no.
+  @param ip       : C-string represenation of the ip addr
+  @param sockfd   : The socket file descriptor associated with the cmd port.
+  @return int     : The data socket file descriptor
+ */
+int send_data_port(int cmd_port, const char* ip, int sockfd);
 
 /*
   Convert a command's C-string representation to it's 
@@ -138,10 +148,9 @@ const char* cmd_enum_to_str(COMMAND_ENUM cmd_enum);
    @param arg    : The null-terminated paramater of the command, usually
                    same as command->arg.
    @param sockfd : The socket file descriptor of the associated client.
-   @return int   : The number of bytes sent to the server, or an int < 0
-                   if there occured an error.
+   @return int   : Status code
 */
-
 int handle_pwd(const char* arg, int sockfd);
 int handle_pass(const char* arg, int sockfd);
+int handle_port(char* arg, int sockfd);
 #endif

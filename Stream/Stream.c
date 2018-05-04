@@ -14,7 +14,8 @@
 
 
 void* handle_client(void* args){
-  int bytes_rcvd = 0, client_socket = *(int*) args, bytes_sent = 0;
+  Server_Arg* server_arg = (Server_Arg*) args;
+  int bytes_rcvd = 0, client_socket = server_arg->sockfd, bytes_sent = 0;
   char user_name[BUF];
   Command c;
   
@@ -22,10 +23,8 @@ void* handle_client(void* args){
     perror("Welcome Message()\n");
     close(client_socket);
     exit(-1);
-  }else{
-    printf("Sent %d byte welcome message\n", bytes_sent);
   }
-
+  
   /* Verify initial login status */
   while(handle_login(client_socket));
   
@@ -53,6 +52,10 @@ void* handle_client(void* args){
 	}
       break;
     case PORT:
+      if(handle_port((char*)&(c.arg), client_socket) >= 0){
+	send_response("225", "Data connection open; no transfer in progress.", client_socket);
+      }else
+	send_response("425", "Can't open data connection.", client_socket);
       break;
     case QUIT:
       break;

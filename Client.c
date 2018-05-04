@@ -54,11 +54,15 @@ int main(int argc, char* argv[]){
     response = get_response(buffer, sizeof(buffer), client_socket, DEBUG);
     memset(buffer, 0, sizeof(buffer));
   }
-  
+
   /* User should be logged in beyond this point, begin main loop */
+  assert(response == 230);
+  
   do{
-    read_command(&c, stdin);
+    memset(&c, 0, sizeof(c));
+    memset(&c2, 0, sizeof(c2));
     printf("FTP > ");
+    read_command(&c, stdin);
     bytes_sent = send_command(&c, client_socket);
     get_command(&c2, client_socket, 1);
   }while(strcmp(buffer, "exit") != 0 && bytes_sent > 0);

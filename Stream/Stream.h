@@ -17,6 +17,11 @@
 #define IP "127.0.0.1"
 #define BACKLOG 10
 
+typedef struct server_arg{
+  int sockfd;
+  char* ip;
+}Server_Arg;
+
 void* handle_client(void* arg);
 void* client_write_thread(void* arg);
 void* client_read_thread(void* arg);

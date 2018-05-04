@@ -5,12 +5,13 @@
 #include <math.h>
 
 #include "../Stream/Stream.h"
+#include "../Stream/Connect.h"
 #include "FTP.h"
 
 const char* USERS[NUM_USERS] = {"Euclid", "Newton", "Gauss", "Euler", "Hilbert"};
 const char* PASSWORDS[NUM_USERS] = {"geometry", "calculus", "electrostatics", "konigsberg", "spaces"};
 const char* welcome_message = "-=(<*>)=-.:. (( Welcome to The FTP server)) .:.-=(<*>)=-";
-const char* COMMAND_STRING[14] = {
+const char* COMMAND_STRING[NUM_COMMANDS] = {
   "ABOR", /* Abort previous FTP command */
   "LIST", /* List file and directories */
   "DELE", /* Delete a file */
@@ -24,7 +25,7 @@ const char* COMMAND_STRING[14] = {
   "STOR", /* Send or put a file */
   "SYST", /* Identify system type */
   "TYPE", /* Specify type (A for ASCII, I for binary) */
-  "USER"  /* Send Username */
+  "USER" /* Send Username */
 };
 
 
@@ -51,6 +52,7 @@ int send_command(const Command* command, int sockfd){
 
 void build_command(Command* command, char* cmd, char* arg){
   size_t i = 0;
+  
   for(i = 0; i < strlen(cmd) && i < CMD_LEN; ++i)
     command->cmd[i] = cmd[i];
   command->cmd[i] = 0x0;
@@ -59,6 +61,7 @@ void build_command(Command* command, char* cmd, char* arg){
     command->arg[i] = arg[i];
   command->arg[i] = 0x0;
 }
+
 int send_response(const char* status, const char* msg, int sockfd){
   const size_t cmd_length = strlen(status) + strlen(msg) + 1;
   char cmd[cmd_length];
@@ -111,6 +114,28 @@ int get_command(Command* command, int sockfd, int print){
   return bytes_rcvd;
 }
 
+int send_data_port(int cmd_port, const char* ip, int sockfd){
+  int sockfd2 , i = 2, bytes_sent;
+  struct sockaddr_in socket_addr;
+  char msg[ARG_LEN];
+  Command c;
+
+  memset(&sockfd2, 0, sizeof(sockfd2));
+  memset(&c, 0, sizeof(c));
+  memset(msg, 0, sizeof(msg));
+  
+  sockfd2 = create_socket();
+  socket_addr = create_socket_address(cmd_port + 1, ip);
+  while(bind_connection(sockfd2, (struct sockaddr*)&socket_addr) < 0)
+    socket_addr = create_socket_address(cmd_port + i, ip);
+
+  sprintf(msg,"%s,%d\r\n", ip,cmd_port + i);
+  build_command(&c, "PORT", msg);
+  bytes_sent = send_command(&c, sockfd);
+  if(bytes_sent < 0) return bytes_sent;
+  return sockfd2;
+}
+
 COMMAND_ENUM cmd_str_to_enum(const char* cmd_str){
   for(size_t i = 0; i < NUM_COMMANDS; ++i)
     if(strcmp(cmd_str, COMMAND_STRING[i]) == 0)
@@ -144,7 +169,7 @@ int handle_login(int sockfd){
       break;
     }
   }
-
+  
   /* Get password (WARNING: FTP TRANSMITS PASSWORDS IN PLAINTEXT) */
   get_command(&c, sockfd, 1);
   while((strcmp(c.cmd, "PASS") != 0)){
@@ -162,6 +187,17 @@ int handle_login(int sockfd){
       break;
     }
   }
-
   return 0; 
+}
+
+int handle_port(char* arg, int sockfd){
+  char* ip = strtok(arg, ",");
+  char* port = strtok(NULL, ",");
+  int sockfd2, port_int = atoi(port);;
+
+  memset(&sockfd2, 0, sizeof(sockfd2));
+  sockfd += 0;
+  sockfd2 = create_socket();
+  struct sockaddr_in sockin = create_socket_address(port_int, ip);
+  return bind_connection(sockfd2, (struct sockaddr*) &sockin);
 }
