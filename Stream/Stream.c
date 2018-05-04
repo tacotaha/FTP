@@ -9,34 +9,81 @@
 #include <unistd.h>
 #include <pthread.h>
 
+#define DEBUG 1
 #include "../FTP/FTP.h"
 
 
 void* handle_client(void* args){
-  int bytes_read = 0, client_socket = *(int*) args, bytes_sent = 0;
-  char message[BUF];
-  Command c1;
-
+  int bytes_rcvd = 0, client_socket = *(int*) args, bytes_sent = 0;
+  char user_name[BUF];
+  Command c;
+  
   if((bytes_sent = send_response("220", welcome_message, client_socket)) <= 0){
     perror("Welcome Message()\n");
     close(client_socket);
     exit(-1);
+  }else{
+    printf("Sent %d byte welcome message\n", bytes_sent);
   }
 
-  /* Ensure the user's login status */
+  /* Verify initial login status */
   while(handle_login(client_socket));
   
-  while( (bytes_read = recv(client_socket,message,sizeof(message),0)) > 0 ){
-    message[bytes_read] = 0x0;
-    printf("Client sent: %s\n", message);
-    get_command(&c1, client_socket, 1);
-    memset(message, 0, MSG_LEN);
+  while((bytes_rcvd = get_command(&c, client_socket, DEBUG)) > 0){
+    switch(cmd_str_to_enum(c.cmd)){
+    case ABOR:
+      break;
+    case LIST:
+      break;
+    case DELE:
+      break;
+    case RMD:
+      break;
+    case MKD:
+      break;
+    case PWD:
+      break;
+    case PASS:
+      for(size_t i = 0; i < NUM_USERS + 1; ++i)
+	if(i == NUM_USERS)
+	  send_response("430", "Invalid Password", client_socket);
+	else if(strcmp(PASSWORDS[i], c.arg) == 0 && user_name == USERS[i]){
+	  send_response("230", "User logged in, proceed.", client_socket);
+	  break;
+	}
+      break;
+    case PORT:
+      break;
+    case QUIT:
+      break;
+    case RETR:
+      break;
+    case STOR:
+      break;
+    case SYST:
+      break;
+    case TYPE:
+      break;
+    case USER:
+      for(size_t i = 0; i < NUM_USERS + 1; ++i)
+	if(i == NUM_USERS)
+	  send_response("430", "Invalid User name", client_socket);
+	else if(strcmp(USERS[i], c.arg) == 0){
+          strcpy(user_name, USERS[i]);
+	  send_response("331", "User name okay, need password", client_socket);
+	  break;
+	}
+      break;
+    default:
+      break;
+    }
   }
   
-  if(bytes_read == 0){
+  
+  if(bytes_rcvd == 0){
     printf("Client %d disconnected\n", client_socket);
     fflush(stdout);
-  } else if(bytes_read == -1)
+  } else if(bytes_rcvd == -1)
     perror("recv()");
   
   pthread_exit(NULL);
