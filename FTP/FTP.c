@@ -1,6 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
+
 #include "../Stream/Stream.h"
 #include "FTP.h"
 
@@ -25,14 +28,17 @@ const char* COMMAND_STRING[14] = {
 };
 
 
-int get_response(char* buffer, int sockfd, int print){
-  int bytes_rcvd = recv(sockfd, buffer, sizeof(buffer), 0);
-  if(bytes_rcvd > 0){
-    buffer[bytes_rcvd] = 0;
+int get_response(char* buffer, size_t len, int sockfd, int print){
+  int  response = 0;
+  if(recv(sockfd, buffer, len, 0) > 0){
+    buffer[len] = 0;
     if(print)
       printf("%s\n", buffer);
+    
+    for(size_t i = 0; i < 3; ++i)
+      response += (buffer[i] - 0x30) * pow(10, 2 - i);
   }
-  return bytes_rcvd;
+  return response;
 }
 
 int send_command(const Command* command, int sockfd){
@@ -43,6 +49,16 @@ int send_command(const Command* command, int sockfd){
   return bytes_sent;
 }
 
+void build_command(Command* command, char* cmd, char* arg){
+  size_t i = 0;
+  for(i = 0; i < strlen(cmd) && i < CMD_LEN; ++i)
+    command->cmd[i] = cmd[i];
+  command->cmd[i] = 0x0;
+
+  for(i = 0; i < strlen(arg) && i < ARG_LEN; ++i)
+    command->arg[i] = arg[i];
+  command->arg[i] = 0x0;
+}
 int send_response(const char* status, const char* msg, int sockfd){
   const size_t cmd_length = strlen(status) + strlen(msg) + 1;
   char cmd[cmd_length];
@@ -95,6 +111,19 @@ int get_command(Command* command, int sockfd, int print){
   return bytes_rcvd;
 }
 
+COMMAND_ENUM cmd_str_to_enum(const char* cmd_str){
+  for(size_t i = 0; i < NUM_COMMANDS; ++i)
+    if(strcmp(cmd_str, COMMAND_STRING[i]) == 0)
+      return i;
+  return -1;
+}
+
+const char* cmd_enum_to_str(COMMAND_ENUM cmd_enum){
+  if(cmd_enum > 0 && cmd_enum < NUM_COMMANDS)
+    return COMMAND_STRING[cmd_enum];
+  return NULL;  
+}
+
 int handle_login(int sockfd){
   Command c;
   
@@ -104,10 +133,6 @@ int handle_login(int sockfd){
     send_response("332", "Need account for login", sockfd);
     get_command(&c, sockfd, 1);
   }
-  
-  printf("READ USERNAME: %s\n", c.arg);
-  printf("In hex:\n");
-  print_hex(c.arg, strlen(c.arg));
   
   for(size_t i = 0; i < NUM_USERS + 1; ++i){
     if(i == NUM_USERS){
