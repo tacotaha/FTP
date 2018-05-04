@@ -1,14 +1,14 @@
 CC=gcc
 CFLAGS=-Wall -Werror -std=c99 -pedantic
 EXEC=server client
-
+LFLAGS=-lpthread -lm
 all: client server
 
 server: connect.o stream.o server.o ftp.o
-	$(CC) $(CFLAGS) connect.o stream.o server.o ftp.o -o server -lpthread
+	$(CC) $(CFLAGS) connect.o stream.o server.o ftp.o -o server $(LFLAGS)
 
 client: connect.o stream.o client.o ftp.o
-	$(CC) $(CFLAGS) connect.o stream.o client.o ftp.o -o client -lpthread
+	$(CC) $(CFLAGS) connect.o stream.o client.o ftp.o -o client $(LFLAGS)
 
 server.o: Server.c
 	$(CC) $(CFLAGS) -c Server.c -o server.o
@@ -23,7 +23,7 @@ stream.o: Stream/Stream.c
 	$(CC) $(CFLAGS) -c Stream/Stream.c -o stream.o
 
 ftp.o: FTP/FTP.c
-	$(CC) $(CFLAGS) -c FTP/FTP.c -o ftp.o
+	$(CC) $(CFLAGS) -c FTP/FTP.c -o ftp.o -lm
 
 clean:
 	rm -f $(EXEC) *.o *~
