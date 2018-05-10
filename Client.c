@@ -61,8 +61,14 @@ int main(int argc, char* argv[]){
     memset(&c2, 0, sizeof(c2));
     printf("FTP > ");
     fgets(buffer, sizeof(buffer), stdin);
-    
+
     input = strtok(buffer, "\n");
+    
+    if(input[0] == '!'){
+      system(input + 1);
+      continue;
+    }
+    
     cmd = strtok(input, " ");
     param = strtok(NULL, " ");
     
