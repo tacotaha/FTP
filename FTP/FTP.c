@@ -205,7 +205,7 @@ int handle_list(char* arg, int sockfd, int data_sockfd){
   }
 
   while ((de = readdir(dr)) != NULL)
-    byte_count += strlen(de->d_name);
+    byte_count += (strlen(de->d_name) + 1);
 
   closedir(dr);
   
