@@ -60,8 +60,8 @@ typedef struct command{
 
    @param buffer : A char buffer of size no less than BUF
    @param len    : Number of bytes to receive (must be <= BUF)
-   @param sockfd : the socket file descriptor associated with the server
-   @param print  : an boolean value specifying wheather or not to print the response.
+   @param sockfd : The socket file descriptor associated with the server
+   @param print  : A Boolean value specifying whether or not to print the response.
    @return int   : The status code (first three bytes) associated with the response.
 */
 int get_response(char* buffer, size_t len, int sockfd, int print);
@@ -77,27 +77,28 @@ int get_response(char* buffer, size_t len, int sockfd, int print);
 int send_command(const Command* command, int sockfd);
 
 /*
-  Send a response from the server containing a status code followed by a message
+  Send a response to the client containing a status code followed by a message
   
   @param status  : Status code (see STATUS)
   @param msg     : Message to accompany the status code
-  @param sockfd  : The socket file descriptor associated with the recipient.
-  @return int    : The number of bytes sent to the server, or a int < 0 
-                   if there occured an error.
+  @param sockfd  : The socket file descriptor associated with the recipient
+  @return int    : The number of bytes sent to the server, 
+  		   or an int < 0 if there occured an error
  */
 int send_response(const char* status, const char* msg, int sockfd);
 
 /*
-  Read and convert an FTP command from a file (usually stdin)
+  Parse a string of the form "CMND This is an agrument" from a 
+  file into a valid command struct.
   
   @param command : A command struct
   @param sockfd  : The socket file descriptor associated with the server.
-  @return int    : The number of bytes read from the file (max is BUF2)
+  @return int    : The number of bytes read from the file (<= BUF2)
  */
 int read_command(Command* command, FILE* fp);
 
 /*
-  Get a valid FTP command to the server.
+  Get a valid FTP command from the server.
   
   @param command : A nonempty command struct.
   @param sockfd  : The socket file descriptor associated with the server.
@@ -110,7 +111,7 @@ int get_command(Command* command, int sockfd, int print);
 /*
   Fill a command struct with the specified parameters.
   
-  @param command : A empty command struct.
+  @param command : An empty command struct.
   @param cmd     : C-string representing the command
   @param arg     : Argument accompanying the command.
  */
@@ -194,7 +195,7 @@ int data_port_connect(int sockfd, char* ip);
 
 /* Server Functions for handling each command each have the format...
    @param arg    : The null-terminated paramater of the command, usually
-                   same as command->arg.
+                   the same as command->arg.
    @param sockfd : The socket file descriptor of the associated client.
    @return int   : Status code
 */

@@ -58,14 +58,6 @@ void* handle_client(void* args){
 	}
       break;
     case PORT:
-      printf("Handling port!\n");
-      if(handle_port((char*)&(c.arg), client_socket, &data_sock) >= 0){
-	send_response("225", "Data connection open; no transfer in progress.", client_socket);
-	printf("Sent response!\n");
-      }else{
-	send_response("425", "Can't open data connection.", client_socket);
-	printf("Sent response!\n");
-      }
       break;
     case QUIT:
       break;
