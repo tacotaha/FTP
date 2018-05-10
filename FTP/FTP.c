@@ -110,15 +110,12 @@ int get_command(Command* command, int sockfd, int print){
   
   if(bytes_rcvd > 0){
     buffer[bytes_rcvd] = 0;
-    
     if(print)
       printf("%s\n", buffer);
-
     token = strtok(buffer, " ");
     if(strlen(token) > CMD_LEN)
       token[CMD_LEN] = 0;
     strcpy(command->cmd, token);
-    
     if((token = strtok(NULL, " "))!= NULL){
       if(strlen(token) > ARG_LEN)
 	token[ARG_LEN] = 0;
@@ -152,16 +149,14 @@ int handle_login(int sockfd){
     get_command(&c, sockfd, 1);
   }
   
-  for(size_t i = 0; i < NUM_USERS + 1; ++i){
+  for(size_t i = 0; i < NUM_USERS + 1; ++i)
     if(i == NUM_USERS){
       send_response("430", "Invalid User name", sockfd);
       return 1;
-    }
-    if(strcmp(USERS[i], c.arg) == 0){
+    }else if(strcmp(USERS[i], c.arg) == 0){
       send_response("331", "User name okay, need password", sockfd);
       break;
     }
-  }
   
   get_command(&c, sockfd, 1);
   while((strcmp(c.cmd, "PASS") != 0)){
@@ -169,16 +164,15 @@ int handle_login(int sockfd){
     get_command(&c, sockfd, 1);
   }
   
-  for(size_t i = 0; i < NUM_USERS + 1; ++i){
+  for(size_t i = 0; i < NUM_USERS + 1; ++i)
     if(i == NUM_USERS){
       send_response("430", "Invalid Password", sockfd);
       return 1;
-    }
-    if(strcmp(PASSWORDS[i], c.arg) == 0){
+    }else if(strcmp(PASSWORDS[i], c.arg) == 0){
       send_response("230", "User logged in, proceed.", sockfd);
       break;
     }
-  }
+  
   return 0; 
 }
 
@@ -190,10 +184,8 @@ const char* user_cmd_enum_to_str(USER_CMD_ENUM cmd_enum){
 
 USER_CMD_ENUM user_cmd_str_to_enum(char* cmd_str){
   if(cmd_str != NULL){
-    char* p = strtok(cmd_str, "\n");
-    p = p == NULL ? cmd_str : p;
     for(size_t i = 0; i < NUM_USER_CMDS; ++i)
-      if(strcmp(p, USER_CMD_STRING[i]) == 0)
+      if(strcmp(cmd_str, USER_CMD_STRING[i]) == 0)
 	return i;
   }
   return -1;
@@ -229,13 +221,13 @@ int handle_list(char* arg, int sockfd, int data_sockfd){
     memset(buffer, 0, sizeof(buffer));
     sprintf(buffer, "%s\n", de->d_name);
     if((status = send(data_sockfd, buffer, strlen(buffer), 0)) < 0){
-      perror("handle_list()\n");
-      exit(1);
+      send_response("451", "Requested action aborted. Local error in processing.", sockfd);
+      return -1;
     }
   }
-
+  
   closedir(dr);  
-
+  
   if(status > 0)
     send_response("226", "ASCII Transfer Complete", sockfd);
   else
@@ -255,7 +247,10 @@ int handle_ls(char* arg, int sockfd, int data_sockfd){
   build_command(&c, "LIST", arg);
   send_command(&c, sockfd);
 
-  get_response(buffer, sizeof(buffer), sockfd, 1);
+  status = get_response(buffer, sizeof(buffer), sockfd, 1);
+
+  if(status == 451) return -1;
+  
   printf("\n");
 
   temp = strtok(buffer, "(");
@@ -318,8 +313,8 @@ int data_port_connect(int sockfd, char* ip){
     perror("data_port_connect()\n");
     exit(1);
   }
+  
   buffer[BUF] = 0;
-
   printf("%s\n", buffer);
   
   for(size_t i = 27; i < strlen(buffer) - 1; ++i)

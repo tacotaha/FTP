@@ -15,7 +15,7 @@ int main(int argc, char* argv[]){
   int client_socket, port = PORT_NO, response = 0, data_sockfd = INT_MIN;
   struct sockaddr_in server_addr;
   char buffer[BUF], user_name[BUF], *ip = IP,
-    password[BUF], *param;
+    password[BUF], *input, *param, *cmd;
   Command c, c2;
   
   memset(&client_socket,0,sizeof(client_socket));
@@ -40,7 +40,6 @@ int main(int argc, char* argv[]){
       }
       memset(buffer, 0, sizeof(buffer));
     }while(get_response(buffer, sizeof(buffer), client_socket, DEBUG) != 331);
-
     memset(&c, 0, sizeof(c));
     printf("Password: ");
     fgets(password, sizeof(password), stdin);
@@ -62,8 +61,12 @@ int main(int argc, char* argv[]){
     memset(&c2, 0, sizeof(c2));
     printf("FTP > ");
     fgets(buffer, sizeof(buffer), stdin);
-    param = strtok(buffer, " ") == NULL ? buffer : strtok(buffer, " ");
-    switch(user_cmd_str_to_enum(param)){
+    
+    input = strtok(buffer, "\n");
+    cmd = strtok(input, " ");
+    param = strtok(NULL, " ");
+    
+    switch(user_cmd_str_to_enum(cmd)){
     case LS:
       if(data_sockfd == INT_MIN){
 	memset(&c, 0, sizeof(c));
@@ -71,7 +74,10 @@ int main(int argc, char* argv[]){
 	send_command(&c, client_socket);
 	data_sockfd = data_port_connect(client_socket, ip);
       }
-      handle_ls(".", client_socket, data_sockfd);
+      if(param == NULL)
+	handle_ls(".", client_socket, data_sockfd);
+      else
+	handle_ls(param, client_socket, data_sockfd);
       break;
     case CD:
       break;
@@ -94,7 +100,7 @@ int main(int argc, char* argv[]){
     default:
       break;
     }
-  }while(strcmp(buffer, "exit") != 0);
+  }while(strcmp(input, "exit") != 0);
   
   close(client_socket);
   return 0;
