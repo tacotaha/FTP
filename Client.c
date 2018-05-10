@@ -86,6 +86,10 @@ int main(int argc, char* argv[]){
 	handle_ls(param, client_socket, data_sockfd);
       break;
     case CD:
+      memset(&c, 0, sizeof(c));
+      build_command(&c, "CWD", param == NULL ? getenv("HOME") : param);
+      send_command(&c, client_socket);
+      get_response(buffer, sizeof(buffer), client_socket, 1);
       break;
     case DELETE:
       break;
@@ -105,13 +109,16 @@ int main(int argc, char* argv[]){
       get_response(buffer, sizeof(buffer), client_socket, 1);
       break;
     case QUIT_:
+      printf("Exiting...Goodbye Now!\n");
+      exit(0);
       break;
     case RMDIR:
       break;
     default:
       break;
     }
-  }while(strcmp(input, "exit") != 0);
+    memset(buffer, 0, sizeof(buffer));
+  }while(1);
   
   close(client_socket);
   return 0;

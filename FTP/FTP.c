@@ -20,6 +20,7 @@ const char* COMMAND_STRING[NUM_COMMANDS] = {
   "DELE", /* Delete a file */
   "RMD",  /* Remove a directory */
   "MKD",  /* Create a directory */
+  "CWD",
   "PWD",  /* Print working directory */
   "PASS", /* Send password (NOTE: THE FTP USES PLAINTEXT PASSWORDS)*/
   "PORT", /* Request open port on specific IP addr/Port No */
@@ -116,7 +117,7 @@ int get_command(Command* command, int sockfd, int print){
     if(strlen(token) > CMD_LEN)
       token[CMD_LEN] = 0;
     strcpy(command->cmd, token);
-    if((token = strtok(NULL, " "))!= NULL){
+    if((token = strtok(NULL, " ")) != NULL && (token = strtok(token, "\r")) != NULL){
       if(strlen(token) > ARG_LEN)
 	token[ARG_LEN] = 0;
       strcpy(command->arg, token);

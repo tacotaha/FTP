@@ -7,7 +7,7 @@
 #define CMD_LEN 5
 #define ARG_LEN 507
 #define MSG_LEN CMD_LEN + ARG_LEN
-#define NUM_COMMANDS 15
+#define NUM_COMMANDS 16
 #define NUM_USER_CMDS 10
 #define NUM_USERS 5
 
@@ -24,6 +24,7 @@ typedef enum Command_Enum{
   DELE,
   RMD,
   MKD,
+  CWD,
   PWD,
   PASS,
   PORT,

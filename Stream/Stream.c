@@ -21,6 +21,9 @@ void* handle_client(void* args){
     bytes_sent = 0, data_sock = INT_MIN, port = server_arg->port;
   char user_name[BUF], *ip = server_arg->ip, cwd[BUF], response[BUF];
   Command c;
+
+  memset(cwd, 0, sizeof(cwd));
+  getcwd(cwd, sizeof(cwd));
   
   if((bytes_sent = send_response("220", welcome_message, client_socket)) <= 0){
     perror("Welcome Message()\n");
@@ -32,6 +35,7 @@ void* handle_client(void* args){
   while(handle_login(client_socket));
   
   while((bytes_rcvd = get_command(&c, client_socket, DEBUG)) > 0){
+    memset(response, 0, sizeof(response));
     switch(cmd_str_to_enum(c.cmd)){
     case ABOR:
       break;
@@ -46,9 +50,19 @@ void* handle_client(void* args){
       break;
     case MKD:
       break;
+    case CWD:
+      if(chdir(c.arg) < 0){
+	sprintf(response, "Can't change directory to: \"%s\": No such file or directory", c.arg);
+	send_response("550",response, client_socket);
+      }else{
+	memset(cwd, 0, sizeof(cwd));
+	getcwd(cwd, sizeof(cwd));
+	
+	sprintf(response, "OK. Current directory is: \"%s\"", cwd);
+	send_response("250",response, client_socket);
+      }	
+      break;
     case PWD:
-      memset(cwd, 0, sizeof(cwd));
-      getcwd(cwd, sizeof(cwd));
       sprintf(response, "\"%s\" is your current location.", cwd);
       send_response("257", response, client_socket);
       break;
