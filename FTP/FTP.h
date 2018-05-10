@@ -199,7 +199,6 @@ int data_port_connect(int sockfd, char* ip);
    @param sockfd : The socket file descriptor of the associated client.
    @return int   : Status code
 */
-int handle_pwd(const char* arg, int sockfd);
 int handle_pass(const char* arg, int sockfd);
 int handle_port(char* arg, int sockfd, int* data_port);
 int handle_list(char* arg, int sockfd, int data_sockfd);

@@ -19,7 +19,7 @@ void* handle_client(void* args){
   Server_Arg* server_arg = (Server_Arg*) args;
   int bytes_rcvd = 0, client_socket = server_arg->sockfd,
     bytes_sent = 0, data_sock = INT_MIN, port = server_arg->port;
-  char user_name[BUF], *ip = server_arg->ip;
+  char user_name[BUF], *ip = server_arg->ip, cwd[BUF], response[BUF];
   Command c;
   
   if((bytes_sent = send_response("220", welcome_message, client_socket)) <= 0){
@@ -47,6 +47,10 @@ void* handle_client(void* args){
     case MKD:
       break;
     case PWD:
+      memset(cwd, 0, sizeof(cwd));
+      getcwd(cwd, sizeof(cwd));
+      sprintf(response, "\"%s\" is your current location.", cwd);
+      send_response("257", response, client_socket);
       break;
     case PASS:
       for(size_t i = 0; i < NUM_USERS + 1; ++i)
@@ -85,6 +89,7 @@ void* handle_client(void* args){
     default:
       break;
     }
+    memset(&c, 0, sizeof(Command));
   }
   
   

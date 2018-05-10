@@ -98,6 +98,11 @@ int main(int argc, char* argv[]){
     case PUT:
       break;
     case PWD_:
+      memset(&c, 0, sizeof(c));
+      memset(buffer, 0, sizeof(buffer));
+      build_command(&c, "PWD", "");
+      send_command(&c, client_socket);
+      get_response(buffer, sizeof(buffer), client_socket, 1);
       break;
     case QUIT_:
       break;
