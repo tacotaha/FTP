@@ -35,6 +35,7 @@ int main(int argc, char* argv[]){
     Server_Arg server_arg;
     server_arg.sockfd = client_socket;
     server_arg.ip = ip;
+    server_arg.port = port;
     if(pthread_create(&t, NULL, handle_client, &server_arg) < 0){
       perror("pthread_create()");
       return -1;

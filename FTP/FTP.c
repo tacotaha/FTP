@@ -3,6 +3,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <dirent.h>
+#include <limits.h>
+#include <assert.h>
 
 #include "../Stream/Stream.h"
 #include "../Stream/Connect.h"
@@ -25,9 +28,22 @@ const char* COMMAND_STRING[NUM_COMMANDS] = {
   "STOR", /* Send or put a file */
   "SYST", /* Identify system type */
   "TYPE", /* Specify type (A for ASCII, I for binary) */
-  "USER" /* Send Username */
+  "USER", /* Send Username */
+  "PASV"  /* Passive mode*/
 };
 
+const char* USER_CMD_STRING[NUM_USER_CMDS] = {
+  "ls",
+  "cd",
+  "rm",
+  "get",
+  "help",
+  "mkdir",
+  "put",
+  "pwd",
+  "quit",
+  "rmdir"
+};
 
 int get_response(char* buffer, size_t len, int sockfd, int print){
   int  response = 0;
@@ -35,7 +51,6 @@ int get_response(char* buffer, size_t len, int sockfd, int print){
     buffer[len] = 0;
     if(print)
       printf("%s\n", buffer);
-    
     for(size_t i = 0; i < 3; ++i)
       response += (buffer[i] - 0x30) * pow(10, 2 - i);
   }
@@ -114,28 +129,6 @@ int get_command(Command* command, int sockfd, int print){
   return bytes_rcvd;
 }
 
-int send_data_port(int cmd_port, const char* ip, int sockfd){
-  int sockfd2 , i = 2, bytes_sent;
-  struct sockaddr_in socket_addr;
-  char msg[ARG_LEN];
-  Command c;
-
-  memset(&sockfd2, 0, sizeof(sockfd2));
-  memset(&c, 0, sizeof(c));
-  memset(msg, 0, sizeof(msg));
-  
-  sockfd2 = create_socket();
-  socket_addr = create_socket_address(cmd_port + 1, ip);
-  while(bind_connection(sockfd2, (struct sockaddr*)&socket_addr) < 0)
-    socket_addr = create_socket_address(cmd_port + i, ip);
-
-  sprintf(msg,"%s,%d\r\n", ip,cmd_port + i);
-  build_command(&c, "PORT", msg);
-  bytes_sent = send_command(&c, sockfd);
-  if(bytes_sent < 0) return bytes_sent;
-  return sockfd2;
-}
-
 COMMAND_ENUM cmd_str_to_enum(const char* cmd_str){
   for(size_t i = 0; i < NUM_COMMANDS; ++i)
     if(strcmp(cmd_str, COMMAND_STRING[i]) == 0)
@@ -170,7 +163,6 @@ int handle_login(int sockfd){
     }
   }
   
-  /* Get password (WARNING: FTP TRANSMITS PASSWORDS IN PLAINTEXT) */
   get_command(&c, sockfd, 1);
   while((strcmp(c.cmd, "PASS") != 0)){
     send_response("331", "User name okay, need password", sockfd);
@@ -190,14 +182,155 @@ int handle_login(int sockfd){
   return 0; 
 }
 
-int handle_port(char* arg, int sockfd){
-  char* ip = strtok(arg, ",");
-  char* port = strtok(NULL, ",");
-  int sockfd2, port_int = atoi(port);;
+const char* user_cmd_enum_to_str(USER_CMD_ENUM cmd_enum){
+  if(cmd_enum > 0 && cmd_enum < NUM_USER_CMDS)
+    return USER_CMD_STRING[cmd_enum];
+  return NULL;  
+}
 
-  memset(&sockfd2, 0, sizeof(sockfd2));
-  sockfd += 0;
-  sockfd2 = create_socket();
-  struct sockaddr_in sockin = create_socket_address(port_int, ip);
-  return bind_connection(sockfd2, (struct sockaddr*) &sockin);
+USER_CMD_ENUM user_cmd_str_to_enum(char* cmd_str){
+  if(cmd_str != NULL){
+    char* p = strtok(cmd_str, "\n");
+    p = p == NULL ? cmd_str : p;
+    for(size_t i = 0; i < NUM_USER_CMDS; ++i)
+      if(strcmp(p, USER_CMD_STRING[i]) == 0)
+	return i;
+  }
+  return -1;
+}
+
+int handle_list(char* arg, int sockfd, int data_sockfd){
+  int status = -1, byte_count = 0;
+  DIR *dr;
+  struct dirent *de;
+  char buffer[BUF];
+
+  memset(buffer, 0, sizeof(buffer));
+
+  if(arg == NULL || (dr = opendir(arg)) == NULL){
+    send_response("451", "Requested action aborted. Local error in processing.", sockfd);
+    return -1;
+  }
+
+  while ((de = readdir(dr)) != NULL)
+    byte_count += strlen(de->d_name);
+
+  closedir(dr);
+  
+  sprintf(buffer, "ASCII data connection for /bin/ls (%d bytes)", byte_count);
+  if(send_response("150", buffer, sockfd) < 0){
+    perror("handle_list()\n");
+    exit(1);
+  }
+  
+  dr = opendir(arg);
+  
+  while ((de = readdir(dr)) != NULL){
+    memset(buffer, 0, sizeof(buffer));
+    sprintf(buffer, "%s\n", de->d_name);
+    if((status = send(data_sockfd, buffer, strlen(buffer), 0)) < 0){
+      perror("handle_list()\n");
+      exit(1);
+    }
+  }
+
+  closedir(dr);  
+
+  if(status > 0)
+    send_response("226", "ASCII Transfer Complete", sockfd);
+  else
+    send_response("550", "Requested action not taken.", sockfd);
+  
+  return status;
+}
+
+int handle_ls(char* arg, int sockfd, int data_sockfd){
+  int byte_count = 0, num_digits = 0, bytes_rcvd = 0, status = 0;
+  char buffer[BUF], *temp;
+  Command c;
+
+  memset(&c, 0, sizeof(c));
+  memset(buffer, 0, sizeof(buffer));
+  
+  build_command(&c, "LIST", arg);
+  send_command(&c, sockfd);
+
+  get_response(buffer, sizeof(buffer), sockfd, 1);
+  printf("\n");
+
+  temp = strtok(buffer, "(");
+  temp = strtok(NULL, "(");
+  assert(temp != NULL);
+  
+  num_digits = strlen(temp) - strlen(" (bytes");
+  
+  for(int i = 0; i < num_digits; ++i, ++temp)
+    byte_count += (*temp - 0x30) * pow(10, num_digits - i - 1);
+
+  memset(buffer, 0, sizeof(buffer));
+
+  while(bytes_rcvd < byte_count && (status = recv(data_sockfd, buffer, sizeof(buffer), 0)) > 0){
+    buffer[sizeof(buffer)] = 0;
+    printf("%s", buffer);
+    memset(buffer, 0, sizeof(buffer));
+    bytes_rcvd += status;
+  }
+
+  printf("\n");
+  return get_response(buffer, sizeof(buffer), sockfd, 1);
+}
+
+int handle_pasv(int cmd_port, const char* ip, int sockfd){
+  int data_socket = 0, client_socket, data_port = cmd_port + 1, status = 0;
+  char buffer[BUF];
+  struct sockaddr_in server_addr;
+  socklen_t sckln = sizeof(struct sockaddr_in);
+  
+  memset(buffer, 0, BUF);
+  
+  data_socket = create_socket();
+  server_addr = create_socket_address(data_port, ip);
+  while(bind_connection(data_socket, (struct sockaddr*)&server_addr) < 0)
+    server_addr = create_socket_address(++data_port, ip);
+
+  sprintf(buffer, "Entering Passive Mode (%d)", data_port);
+  status = send_response("227", buffer, sockfd);
+  
+  if(status < 0 ){
+    perror("send_data_port()\n");
+    exit(1);
+  }
+  
+  listen_for_connection(data_socket, BACKLOG);
+  client_socket = accept(data_socket,(struct sockaddr *)&server_addr,&sckln);
+
+  return client_socket;
+}
+
+int data_port_connect(int sockfd, char* ip){
+  int data_port = 0,  data_socket = 0;
+  char buffer[BUF];
+  struct sockaddr_in server_addr;
+
+  memset(buffer, 0, sizeof(buffer));
+  
+  if(recv(sockfd, buffer, BUF, 0) < 0){
+    perror("data_port_connect()\n");
+    exit(1);
+  }
+  buffer[BUF] = 0;
+
+  printf("%s\n", buffer);
+  
+  for(size_t i = 27; i < strlen(buffer) - 1; ++i)
+    data_port += (buffer[i] - 0x30) * pow(10, strlen(buffer) - i - 2);
+  
+  data_socket = create_socket();
+  server_addr = create_socket_address(data_port, ip);
+  if((connect_to_server(data_socket,(struct sockaddr*)&server_addr)) < 0){
+    perror("data_port_connect()\n");
+    exit(1);
+  }
+
+  return data_socket;
 }

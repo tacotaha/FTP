@@ -9,12 +9,11 @@ int create_socket(void){
 
   setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
   
-  if(sock  >= 0)
-    printf("[+] Socket Created Successfully.\n");
-  else{
+  if(sock < 0){
     perror("create_socket");
     exit(1);
   }
+  
   return sock;
 }
 
@@ -28,18 +27,14 @@ struct sockaddr_in create_socket_address(int port, const char* ip_addr){
 
 int bind_connection(int socket, struct sockaddr* sa){
   int status = bind(socket,sa,sizeof(*sa));
-  if(status >= 0)
-    printf("[+] Address successfully bound to socket.\n");
-  else
+  if(status < 0)
     printf("[-] Failed to bind address to socket.\n");
   return status;
 }
 
 int listen_for_connection(int listener_socket, int backlog){
   int status = listen(listener_socket, backlog);
-  if(status == 0)
-    printf("[+] Listening...\n");
-  else
+  if(status != 0)
     printf("[+] Failed to listen for connection\n");
   return status;
 }
@@ -47,9 +42,7 @@ int listen_for_connection(int listener_socket, int backlog){
 int accept_connection_from_client(int server_socket,struct sockaddr* client,
 				  socklen_t* addr_size){
   int client_socket = accept(server_socket,(struct sockaddr*)&client,addr_size);
-  if(client_socket >= 0)
-    printf("[+] Accepted Connection.\n");
-  else{
+  if(client_socket < 0){
     perror("accept_connection_from_client");
     exit(1);
   }
@@ -58,9 +51,7 @@ int accept_connection_from_client(int server_socket,struct sockaddr* client,
 
 int connect_to_server(int client_socket, struct sockaddr* server){
   int status = connect(client_socket,server,sizeof(*server));
-  if(status == 0)
-    printf("[+] Address successfully bound to socket.\n");
-  else
+  if(status != 0)
     printf("[-] Address unsuccessfully bound to socket.\n");
   return status;
 }

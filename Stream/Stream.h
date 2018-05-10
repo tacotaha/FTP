@@ -19,6 +19,7 @@
 
 typedef struct server_arg{
   int sockfd;
+  int port;
   char* ip;
 }Server_Arg;
 

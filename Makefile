@@ -4,6 +4,12 @@ EXEC=server client
 LFLAGS=-lpthread -lm
 all: client server
 
+test_server: test_server.c connect.o stream.o ftp.o
+	$(CC) $(CFLAGS) test_server.c connect.o stream.o ftp.o -o test_server $(LFLAGS)
+
+test_client: test_client.c connect.o stream.o ftp.o
+	$(CC) $(CFLAGS) test_client.c connect.o stream.o ftp.o -o test_client $(LFLAGS)
+
 server: connect.o stream.o server.o ftp.o
 	$(CC) $(CFLAGS) connect.o stream.o server.o ftp.o -o server $(LFLAGS)
 

@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <ctype.h>
+#include <limits.h>
 
 #include "FTP/FTP.h"
 #include "Stream/Connect.h"
@@ -10,9 +12,10 @@
 #define DEBUG 1
 
 int main(int argc, char* argv[]){
-  int client_socket, port = PORT_NO, bytes_sent, response = 0;
+  int client_socket, port = PORT_NO, response = 0, data_sockfd = INT_MIN;
   struct sockaddr_in server_addr;
-  char buffer[BUF], user_name[BUF], *ip = IP, password[BUF];
+  char buffer[BUF], user_name[BUF], *ip = IP,
+    password[BUF], *param;
   Command c, c2;
   
   memset(&client_socket,0,sizeof(client_socket));
@@ -22,12 +25,10 @@ int main(int argc, char* argv[]){
   server_addr = create_socket_address(port, ip);
   connect_to_server(client_socket,(struct sockaddr*)&server_addr);
   
-  /* Should be initial connect message*/
   response = get_response(buffer, sizeof(buffer), client_socket, DEBUG);
   assert(response == 220);
   
   while(response != 230){
-    /* Get Username */
     do{
       printf("Username: ");
       fgets(user_name, sizeof(user_name), stdin);
@@ -39,8 +40,7 @@ int main(int argc, char* argv[]){
       }
       memset(buffer, 0, sizeof(buffer));
     }while(get_response(buffer, sizeof(buffer), client_socket, DEBUG) != 331);
-    
-    /* Get Password */
+
     memset(&c, 0, sizeof(c));
     printf("Password: ");
     fgets(password, sizeof(password), stdin);
@@ -55,17 +55,46 @@ int main(int argc, char* argv[]){
     memset(buffer, 0, sizeof(buffer));
   }
 
-  /* User should be logged in beyond this point, begin main loop */
   assert(response == 230);
-  
+
   do{
     memset(&c, 0, sizeof(c));
     memset(&c2, 0, sizeof(c2));
     printf("FTP > ");
-    read_command(&c, stdin);
-    bytes_sent = send_command(&c, client_socket);
-    get_command(&c2, client_socket, 1);
-  }while(strcmp(buffer, "exit") != 0 && bytes_sent > 0);
+    fgets(buffer, sizeof(buffer), stdin);
+    param = strtok(buffer, " ") == NULL ? buffer : strtok(buffer, " ");
+    switch(user_cmd_str_to_enum(param)){
+    case LS:
+      if(data_sockfd == INT_MIN){
+	memset(&c, 0, sizeof(c));
+	build_command(&c, "PASV", "");
+	send_command(&c, client_socket);
+	data_sockfd = data_port_connect(client_socket, ip);
+      }
+      handle_ls(".", client_socket, data_sockfd);
+      break;
+    case CD:
+      break;
+    case DELETE:
+      break;
+    case GET:
+      break;
+    case HELP:
+      break;
+    case MKDIR:
+      break;
+    case PUT:
+      break;
+    case PWD_:
+      break;
+    case QUIT_:
+      break;
+    case RMDIR:
+      break;
+    default:
+      break;
+    }
+  }while(strcmp(buffer, "exit") != 0);
   
   close(client_socket);
   return 0;
