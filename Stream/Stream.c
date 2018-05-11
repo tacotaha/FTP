@@ -19,7 +19,7 @@ void* handle_client(void* args){
   Server_Arg* server_arg = (Server_Arg*) args;
   int bytes_rcvd = 0, client_socket = server_arg->sockfd,
     bytes_sent = 0, data_sock = INT_MIN, port = server_arg->port;
-  char user_name[BUF], *ip = server_arg->ip, cwd[BUF], response[BUF];
+  char user_name[BUF], *ip = server_arg->ip, cwd[BUF], response[BUF2];
   Command c;
 
   memset(cwd, 0, sizeof(cwd));
