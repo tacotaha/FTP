@@ -47,6 +47,7 @@ void* handle_client(void* args){
     case DELE:
       break;
     case RMD:
+      handle_rm(c.arg, client_socket);
       break;
     case MKD:
       break;

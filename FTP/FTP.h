@@ -204,4 +204,5 @@ int handle_pass(const char* arg, int sockfd);
 int handle_port(char* arg, int sockfd, int* data_port);
 int handle_list(char* arg, int sockfd, int data_sockfd);
 int handle_ls(char* arg, int sockfd, int data_sockfd);
+int handle_rm(char* arg, int sockfd);
 #endif

@@ -113,6 +113,11 @@ int main(int argc, char* argv[]){
       exit(0);
       break;
     case RMDIR:
+      if(param == NULL) break;
+      memset(&c, 0, sizeof(c));
+      build_command(&c, "RMD", param);
+      send_command(&c, client_socket);
+      get_response(buffer, sizeof(buffer), client_socket, 1);
       break;
     default:
       break;

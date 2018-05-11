@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <limits.h>
 #include <assert.h>
+#include <sys/stat.h>
 
 #include "../Stream/Stream.h"
 #include "../Stream/Connect.h"
@@ -20,7 +21,7 @@ const char* COMMAND_STRING[NUM_COMMANDS] = {
   "DELE", /* Delete a file */
   "RMD",  /* Remove a directory */
   "MKD",  /* Create a directory */
-  "CWD",
+  "CWD",  /* Change working directory */
   "PWD",  /* Print working directory */
   "PASS", /* Send password (NOTE: THE FTP USES PLAINTEXT PASSWORDS)*/
   "PORT", /* Request open port on specific IP addr/Port No */
@@ -36,14 +37,14 @@ const char* COMMAND_STRING[NUM_COMMANDS] = {
 const char* USER_CMD_STRING[NUM_USER_CMDS] = {
   "ls",
   "cd",
-  "rm",
+  "delete",
   "get",
   "help",
   "mkdir",
   "put",
   "pwd",
   "quit",
-  "rmdir"
+  "rm"
 };
 
 int get_response(char* buffer, size_t len, int sockfd, int print){
@@ -329,4 +330,18 @@ int data_port_connect(int sockfd, char* ip){
   }
 
   return data_socket;
+}
+
+int handle_rm(char* arg, int sockfd){
+  struct stat statbuf;
+  char buffer[BUF];
+  
+  memset(buffer, 0, sizeof(buffer));
+  sprintf(buffer, "rm -r %s", arg);
+  
+  if(stat(arg, &statbuf) == 0 && system(buffer) == 0)
+    if(S_ISDIR(statbuf.st_mode))
+      return send_response("250", "The directory was successfully removed", sockfd);
+    
+  return send_response("550", "Can't remove directory: No such directory", sockfd);
 }
