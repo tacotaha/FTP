@@ -45,6 +45,7 @@ void* handle_client(void* args){
       handle_list(c.arg, client_socket, data_sock);
       break;
     case DELE:
+      handle_delete(c.arg, client_socket);
       break;
     case RMD:
       handle_rm(c.arg, client_socket);

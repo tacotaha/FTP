@@ -345,3 +345,22 @@ int handle_rm(char* arg, int sockfd){
     
   return send_response("550", "Can't remove directory: No such directory", sockfd);
 }
+
+int handle_delete(char* arg, int sockfd){
+  struct stat statbuf;
+  char buffer[BUF];
+  
+  memset(buffer, 0, sizeof(buffer));
+  sprintf(buffer, "rm %s", arg);
+  
+  if(stat(arg, &statbuf) == 0 && system(buffer) == 0)
+    if(S_ISREG(statbuf.st_mode)){
+      memset(buffer, 0, sizeof(buffer));
+      sprintf(buffer, "Deleted %s", arg);
+      return send_response("250", buffer, sockfd);
+    }
+
+  memset(buffer, 0, sizeof(buffer));
+  sprintf(buffer, "Could not delete %s: No such file", arg);
+  return send_response("550", buffer, sockfd);
+}

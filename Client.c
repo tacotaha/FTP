@@ -92,6 +92,11 @@ int main(int argc, char* argv[]){
       get_response(buffer, sizeof(buffer), client_socket, 1);
       break;
     case DELETE:
+      if(param == NULL) break;
+      memset(&c, 0, sizeof(c));
+      build_command(&c, "DELE", param);
+      send_command(&c, client_socket);
+      get_response(buffer, sizeof(buffer), client_socket, 1);
       break;
     case GET:
       break;
