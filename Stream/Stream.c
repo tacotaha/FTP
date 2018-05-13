@@ -51,6 +51,7 @@ void* handle_client(void* args){
       handle_rm(c.arg, client_socket);
       break;
     case MKD:
+      handle_mkdir(c.arg, client_socket);
       break;
     case CWD:
       if(chdir(c.arg) < 0){
@@ -82,6 +83,8 @@ void* handle_client(void* args){
     case QUIT:
       break;
     case RETR:
+      assert(data_sock != INT_MIN);
+      handle_retr(c.arg, client_socket, data_sock);
       break;
     case STOR:
       break;

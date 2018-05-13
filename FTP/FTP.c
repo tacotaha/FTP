@@ -7,6 +7,9 @@
 #include <limits.h>
 #include <assert.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
+#include <time.h>
 
 #include "../Stream/Stream.h"
 #include "../Stream/Connect.h"
@@ -305,7 +308,7 @@ int handle_pasv(int cmd_port, const char* ip, int sockfd){
 
 int data_port_connect(int sockfd, char* ip){
   int data_port = 0,  data_socket = 0;
-  char buffer[BUF], *ptr;
+  char buffer[PACKET_LEN], *ptr;
   struct sockaddr_in server_addr;
 
   memset(buffer, 0, sizeof(buffer));
@@ -367,4 +370,111 @@ int handle_delete(char* arg, int sockfd){
   memset(buffer, 0, sizeof(buffer));
   sprintf(buffer, "Could not delete %s: No such file", arg);
   return send_response("550", buffer, sockfd);
+}
+
+int handle_mkdir(char* arg, int sockfd){
+  struct stat statbuf;
+  char buffer[BUF];
+  
+  memset(buffer, 0, sizeof(buffer));
+  
+  if(stat(arg, &statbuf) == -1){
+    mkdir(arg, 0700);
+    return send_response("257", "The directory was successfully created", sockfd);
+  }
+
+  return send_response("550", "Can't create directory: File exists", sockfd);
+}
+
+int handle_retr(char* arg, int client_socket, int data_socket){
+  struct stat statbuf;
+  char buffer[PACKET_LEN];
+  int fsize = 0, bytes_sent = 0, transferred = 0, bytes_left = 0, fd = 0;
+  off_t offset = 0;
+  
+  memset(buffer, 0, sizeof(buffer));
+  
+  if(stat(arg, &statbuf) == 0){
+    if(S_ISDIR(statbuf.st_mode))
+      return send_response("550", "I can only retrieve regular files", client_socket);
+
+    fd = open(arg, O_RDONLY);
+    assert(fd != -1);
+
+    assert(fstat(fd, &statbuf) >= 0);
+    fsize = bytes_left = statbuf.st_size;
+    
+    sprintf(buffer, "Starting file transfer (%d bytes)", fsize);
+    send_response("200", buffer, client_socket);
+
+    while(bytes_left > 0 && (bytes_sent = sendfile(data_socket, fd, &offset, PACKET_LEN)) > 0){
+      transferred += bytes_sent;
+      bytes_left -= bytes_sent;
+      printf("[%lf%c] Sent %d bytes...\n", (double) 100*transferred/fsize, '%', transferred);
+    }
+    
+    close(fd);
+    return send_response("200", "File transfer complete.", client_socket);
+  }
+  
+  sprintf(buffer, "Can't open %s. No such file.", arg);
+  return send_response("550", buffer, client_socket);
+}
+
+int handle_get(char* arg, int client_socket, int data_socket){
+  Command c;
+  char buffer[PACKET_LEN], *ptr;
+  int file_size = 0, bytes_rcvd = 0, bytes_left = 0, response = 0;
+  clock_t begin, end;
+  double download_time = 0;
+  FILE* fp;
+  
+  memset(&c, 0, sizeof(c));
+  memset(buffer, 0, sizeof(buffer));
+  
+  build_command(&c, "RETR", arg);
+  send_command(&c, client_socket);
+  response = get_response(buffer, client_socket, 1);
+
+  printf("RESPONSE: %d\n", response);
+  
+  if(response == 200){
+    ptr = strtok(buffer, "(");
+    ptr = strtok(NULL, "(");
+    ptr = strtok(ptr, ")");
+    
+    assert(ptr != NULL);
+    
+    file_size = bytes_left = atoi(ptr);
+    fp = fopen(arg, "w");
+    assert(fp != NULL);
+    file_size += 0;
+    
+    begin = clock();
+    while(bytes_left > 0 && (bytes_rcvd = recv(data_socket, buffer, PACKET_LEN, 0)) > 0){
+      fwrite(buffer, 1, bytes_rcvd, fp);
+      bytes_left -= bytes_rcvd;
+    }
+    end = clock();
+    
+    download_time = (double) (end - begin) / CLOCKS_PER_SEC;
+    printf("Download time: %lf seconds --> %lf Kbytes/s\n", download_time, file_size / 1024 / download_time); 
+    
+    fclose(fp);
+    return get_response(buffer, client_socket, 1);
+  }
+  
+  return response;
+}
+
+int send_passive(int client_socket, int* data_socket, char* ip){
+  if(*data_socket == INT_MIN){
+    Command c;
+    memset(&c, 0, sizeof(c));
+    *data_socket = 0;
+    build_command(&c, "PASV", "");
+    send_command(&c, client_socket);
+    *data_socket = data_port_connect(client_socket, ip);
+  }
+  return *data_socket;
 }

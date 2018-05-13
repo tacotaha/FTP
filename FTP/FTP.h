@@ -200,10 +200,15 @@ int data_port_connect(int sockfd, char* ip);
    @param sockfd : The socket file descriptor of the associated client.
    @return int   : Status code
 */
+
 int handle_pass(const char* arg, int sockfd);
 int handle_port(char* arg, int sockfd, int* data_port);
 int handle_list(char* arg, int sockfd, int data_sockfd);
 int handle_ls(char* arg, int sockfd, int data_sockfd);
 int handle_rm(char* arg, int sockfd);
 int handle_delete(char* arg, int sockfd);
+int handle_mkdir(char* arg, int sockfd);
+int handle_get(char* arg, int client, int data);
+int handle_retr(char* arg, int client, int data);
+int send_passive(int client_socket, int* data_socket, char* ip);
 #endif

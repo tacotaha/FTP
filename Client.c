@@ -74,12 +74,7 @@ int main(int argc, char* argv[]){
     
     switch(user_cmd_str_to_enum(cmd)){
     case LS:
-      if(data_sockfd == INT_MIN){
-	memset(&c, 0, sizeof(c));
-	build_command(&c, "PASV", "");
-	send_command(&c, client_socket);
-	data_sockfd = data_port_connect(client_socket, ip);
-      }
+      send_passive(client_socket, &data_sockfd, ip);
       if(param == NULL)
 	handle_ls(".", client_socket, data_sockfd);
       else
@@ -99,10 +94,18 @@ int main(int argc, char* argv[]){
       get_response(buffer, client_socket, 1);
       break;
     case GET:
+      if(param == NULL) break;
+      send_passive(client_socket, &data_sockfd, ip);
+      handle_get(param, client_socket, data_sockfd);
       break;
     case HELP:
       break;
     case MKDIR:
+      if(param == NULL) break;
+      memset(&c, 0, sizeof(c));
+      build_command(&c, "MKD", param);
+      send_command(&c, client_socket);
+      get_response(buffer, client_socket, 1);
       break;
     case PUT:
       break;
