@@ -25,7 +25,7 @@ int main(int argc, char* argv[]){
   server_addr = create_socket_address(port, ip);
   connect_to_server(client_socket,(struct sockaddr*)&server_addr);
   
-  response = get_response(buffer, sizeof(buffer), client_socket, DEBUG);
+  response = get_response(buffer, client_socket, DEBUG);
   assert(response == 220);
   
   while(response != 230){
@@ -39,7 +39,7 @@ int main(int argc, char* argv[]){
 	exit(1);
       }
       memset(buffer, 0, sizeof(buffer));
-    }while(get_response(buffer, sizeof(buffer), client_socket, DEBUG) != 331);
+    }while(get_response(buffer, client_socket, DEBUG) != 331);
     memset(&c, 0, sizeof(c));
     printf("Password: ");
     fgets(password, sizeof(password), stdin);
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]){
       exit(1);
     }
     memset(buffer, 0, sizeof(buffer));
-    response = get_response(buffer, sizeof(buffer), client_socket, DEBUG);
+    response = get_response(buffer, client_socket, DEBUG);
     memset(buffer, 0, sizeof(buffer));
   }
 
@@ -89,14 +89,14 @@ int main(int argc, char* argv[]){
       memset(&c, 0, sizeof(c));
       build_command(&c, "CWD", param == NULL ? getenv("HOME") : param);
       send_command(&c, client_socket);
-      get_response(buffer, sizeof(buffer), client_socket, 1);
+      get_response(buffer, client_socket, 1);
       break;
     case DELETE:
       if(param == NULL) break;
       memset(&c, 0, sizeof(c));
       build_command(&c, "DELE", param);
       send_command(&c, client_socket);
-      get_response(buffer, sizeof(buffer), client_socket, 1);
+      get_response(buffer, client_socket, 1);
       break;
     case GET:
       break;
@@ -111,7 +111,7 @@ int main(int argc, char* argv[]){
       memset(buffer, 0, sizeof(buffer));
       build_command(&c, "PWD", "");
       send_command(&c, client_socket);
-      get_response(buffer, sizeof(buffer), client_socket, 1);
+      get_response(buffer, client_socket, 1);
       break;
     case QUIT_:
       printf("Exiting...Goodbye Now!\n");
@@ -122,7 +122,7 @@ int main(int argc, char* argv[]){
       memset(&c, 0, sizeof(c));
       build_command(&c, "RMD", param);
       send_command(&c, client_socket);
-      get_response(buffer, sizeof(buffer), client_socket, 1);
+      get_response(buffer, client_socket, 1);
       break;
     default:
       break;

@@ -47,10 +47,10 @@ const char* USER_CMD_STRING[NUM_USER_CMDS] = {
   "rm"
 };
 
-int get_response(char* buffer, size_t len, int sockfd, int print){
+int get_response(char* buffer, int sockfd, int print){
   int  response = 0;
-  if(recv(sockfd, buffer, len, 0) > 0){
-    buffer[len] = 0;
+  if(recv(sockfd, buffer, PACKET_LEN, 0) > 0){
+    buffer[PACKET_LEN] = 0;
     if(print)
       printf("%s\n", buffer);
     for(size_t i = 0; i < 3; ++i)
@@ -63,7 +63,7 @@ int send_command(const Command* command, int sockfd){
   const size_t cmd_length = CMD_LEN + strlen(command->arg);
   char cmd[cmd_length];
   sprintf(cmd, "%s %s\r\n", command->cmd, command->arg);
-  int bytes_sent = send(sockfd, cmd, cmd_length, 0);
+  int bytes_sent = send(sockfd, cmd, PACKET_LEN, 0);
   return bytes_sent;
 }
 
@@ -83,7 +83,7 @@ int send_response(const char* status, const char* msg, int sockfd){
   const size_t cmd_length = strlen(status) + strlen(msg) + 1;
   char cmd[cmd_length];
   sprintf(cmd, "%s %s\r\n", status, msg);
-  int bytes_sent = send(sockfd, cmd, cmd_length, 0);
+  int bytes_sent = send(sockfd, cmd, PACKET_LEN, 0);
   return bytes_sent;
 }
 
@@ -108,7 +108,7 @@ int read_command(Command* command, FILE* fp){
 
 int get_command(Command* command, int sockfd, int print){
   char buffer[MSG_LEN], *token;
-  int bytes_rcvd = recv(sockfd, buffer, sizeof(buffer), 0);
+  int bytes_rcvd = recv(sockfd, buffer, PACKET_LEN, 0);
   
   if(bytes_rcvd > 0){
     buffer[bytes_rcvd] = 0;
@@ -239,8 +239,8 @@ int handle_list(char* arg, int sockfd, int data_sockfd){
 }
 
 int handle_ls(char* arg, int sockfd, int data_sockfd){
-  int byte_count = 0, num_digits = 0, bytes_rcvd = 0, status = 0;
-  char buffer[BUF], *temp;
+  int byte_count = 0, bytes_rcvd = 0, status = 0;
+  char buffer[BUF], *ptr;
   Command c;
 
   memset(&c, 0, sizeof(c));
@@ -249,32 +249,31 @@ int handle_ls(char* arg, int sockfd, int data_sockfd){
   build_command(&c, "LIST", arg);
   send_command(&c, sockfd);
 
-  status = get_response(buffer, sizeof(buffer), sockfd, 1);
-
+  status = get_response(buffer, sockfd, 1);
+  
   if(status == 451) return -1;
   
   printf("\n");
 
-  temp = strtok(buffer, "(");
-  temp = strtok(NULL, "(");
-  assert(temp != NULL);
+  ptr = strtok(buffer, "(");
+  ptr = strtok(NULL, "(");
+  ptr = strtok(ptr, " ");
   
-  num_digits = strlen(temp) - strlen(" (bytes");
+  assert(ptr != NULL);
   
-  for(int i = 0; i < num_digits; ++i, ++temp)
-    byte_count += (*temp - 0x30) * pow(10, num_digits - i - 1);
+  for(size_t i = 0; i < strlen(ptr); ++i)
+    byte_count += (ptr[i] - 0x30) * pow(10, strlen(ptr) - i - 1);
 
   memset(buffer, 0, sizeof(buffer));
-
+  
   while(bytes_rcvd < byte_count && (status = recv(data_sockfd, buffer, sizeof(buffer), 0)) > 0){
     buffer[sizeof(buffer)] = 0;
     printf("%s", buffer);
     memset(buffer, 0, sizeof(buffer));
     bytes_rcvd += status;
   }
-
-  printf("\n");
-  return get_response(buffer, sizeof(buffer), sockfd, 1);
+  
+  return get_response(buffer, sockfd, 1);
 }
 
 int handle_pasv(int cmd_port, const char* ip, int sockfd){
@@ -306,29 +305,34 @@ int handle_pasv(int cmd_port, const char* ip, int sockfd){
 
 int data_port_connect(int sockfd, char* ip){
   int data_port = 0,  data_socket = 0;
-  char buffer[BUF];
+  char buffer[BUF], *ptr;
   struct sockaddr_in server_addr;
 
   memset(buffer, 0, sizeof(buffer));
   
-  if(recv(sockfd, buffer, BUF, 0) < 0){
+  if(recv(sockfd, buffer, PACKET_LEN, 0) < 0){
     perror("data_port_connect()\n");
     exit(1);
   }
   
-  buffer[BUF] = 0;
-  printf("%s\n", buffer);
+  buffer[PACKET_LEN] = 0;
   
-  for(size_t i = 27; i < strlen(buffer) - 1; ++i)
-    data_port += (buffer[i] - 0x30) * pow(10, strlen(buffer) - i - 2);
-  
+  ptr = strtok(buffer, "(");
+  ptr = strtok(NULL, "(");
+  ptr = strtok(ptr, ")");
+
+  assert(ptr != NULL);
+
+  for(size_t i = 0; i < strlen(ptr); ++i)
+    data_port += (ptr[i] - 0x30) * pow(10, strlen(ptr) - i - 1);
+
   data_socket = create_socket();
   server_addr = create_socket_address(data_port, ip);
   if((connect_to_server(data_socket,(struct sockaddr*)&server_addr)) < 0){
     perror("data_port_connect()\n");
     exit(1);
   }
-
+  
   return data_socket;
 }
 

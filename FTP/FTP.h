@@ -10,6 +10,7 @@
 #define NUM_COMMANDS 16
 #define NUM_USER_CMDS 10
 #define NUM_USERS 5
+#define PACKET_LEN 512
 
 /* Defined in FTP.c */
 extern const char* USERS[NUM_USERS];
@@ -60,12 +61,11 @@ typedef struct command{
    status code as an integer.
 
    @param buffer : A char buffer of size no less than BUF
-   @param len    : Number of bytes to receive (must be <= BUF)
    @param sockfd : The socket file descriptor associated with the server
    @param print  : A Boolean value specifying whether or not to print the response.
    @return int   : The status code (first three bytes) associated with the response.
 */
-int get_response(char* buffer, size_t len, int sockfd, int print);
+int get_response(char* buffer, int sockfd, int print);
 
 /*
   Send a valid FTP command to the server.
