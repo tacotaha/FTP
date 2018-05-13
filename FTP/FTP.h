@@ -211,4 +211,7 @@ int handle_mkdir(char* arg, int sockfd);
 int handle_get(char* arg, int client, int data);
 int handle_retr(char* arg, int client, int data);
 int send_passive(int client_socket, int* data_socket, char* ip);
+int handle_stor(char* arg, int client, int data);
+int handle_put(char* arg, int client, int data);
+
 #endif

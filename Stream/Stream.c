@@ -87,6 +87,9 @@ void* handle_client(void* args){
       handle_retr(c.arg, client_socket, data_sock);
       break;
     case STOR:
+      assert(data_sock != INT_MIN);
+      printf("ARG: %s\n", c.arg);
+      handle_stor(c.arg, client_socket, data_sock);
       break;
     case SYST:
       break;

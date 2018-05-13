@@ -421,6 +421,7 @@ int handle_retr(char* arg, int client_socket, int data_socket){
   return send_response("550", buffer, client_socket);
 }
 
+
 int handle_get(char* arg, int client_socket, int data_socket){
   Command c;
   char buffer[PACKET_LEN], *ptr;
@@ -448,7 +449,6 @@ int handle_get(char* arg, int client_socket, int data_socket){
     file_size = bytes_left = atoi(ptr);
     fp = fopen(arg, "w");
     assert(fp != NULL);
-    file_size += 0;
     
     begin = clock();
     while(bytes_left > 0 && (bytes_rcvd = recv(data_socket, buffer, PACKET_LEN, 0)) > 0){
@@ -477,4 +477,98 @@ int send_passive(int client_socket, int* data_socket, char* ip){
     *data_socket = data_port_connect(client_socket, ip);
   }
   return *data_socket;
+}
+
+int handle_put(char* arg, int client_socket, int data_socket){
+  struct stat statbuf;
+  char buffer[PACKET_LEN];
+  int fsize = 0, bytes_sent = 0, transferred = 0, bytes_left = 0, fd = 0;
+  off_t offset = 0;
+  Command c;
+  clock_t begin, end;
+  double upload_time = 0;
+
+  memset(buffer, 0, sizeof(buffer));
+  
+  if(stat(arg, &statbuf) == 0){
+    if(S_ISDIR(statbuf.st_mode)){
+      printf("%s: Not a plain file\n", arg);
+      return -1;
+    }
+
+    memset(&c, 0, sizeof(Command));
+
+    fd = open(arg, O_RDONLY);
+    assert(fd != -1);
+
+    assert(fstat(fd, &statbuf) >= 0);
+    fsize = bytes_left = statbuf.st_size;
+
+    sprintf(buffer, "%s:(%d:bytes)", arg, fsize);
+    build_command(&c, "STOR", buffer);
+    send_command(&c, client_socket);
+
+    memset(buffer, 0, sizeof(buffer));
+    get_response(buffer, client_socket, 1);
+   
+    begin = clock();
+    while(bytes_left > 0 && (bytes_sent = sendfile(data_socket, fd, &offset, PACKET_LEN)) > 0){
+      transferred += bytes_sent;
+      bytes_left -= bytes_sent;
+    }
+    end = clock();
+
+    upload_time = (double) (end - begin) / CLOCKS_PER_SEC;
+    printf("Upload time: %lf seconds --> %lf Kbytes/s\n", upload_time, fsize / 1024 / upload_time);
+    return get_response(buffer, client_socket, 1);
+  }
+
+  printf("Can't open %s: No such file.\n", arg);
+  return -1;
+}
+
+
+int handle_stor(char* arg, int client_socket, int data_socket){
+  Command c;
+  char buffer[PACKET_LEN], *ptr;
+  int file_size = 0, bytes_rcvd = 0, bytes_left = 0, response = 0;
+  clock_t begin, end;
+  double download_time;
+  
+  FILE* fp;
+  
+  memset(&c, 0, sizeof(c));
+  memset(buffer, 0, sizeof(buffer));
+  strcpy(buffer, arg);
+  
+  ptr = strtok(buffer, " ");
+  ptr = strtok(ptr, ":");
+  assert(ptr != NULL);
+
+  fp = fopen(ptr, "w");
+  assert(fp != NULL);
+
+  ptr = strtok(arg, "(");
+  ptr = strtok(NULL, "(");
+  ptr = strtok(ptr, ":");
+  assert(ptr != NULL);
+  
+  file_size = bytes_left = atoi(ptr);
+  
+  send_response("200", "Ready for file transfer.", client_socket);
+  
+  begin = clock();
+  while(bytes_left > 0 && (bytes_rcvd = recv(data_socket, buffer, PACKET_LEN, 0)) > 0){
+    fwrite(buffer, 1, bytes_rcvd, fp);
+    bytes_left -= bytes_rcvd;
+    printf("[%lf%c] Received %d bytes...\n", 100 * (1 - (double)bytes_left/file_size), '%', bytes_rcvd);
+  }
+  end = clock();
+  download_time = (double) (end - begin) / CLOCKS_PER_SEC;
+  printf("Download time: %lf seconds --> %lf Kbytes/s\n", download_time, file_size / 1024 / download_time);
+  
+  send_response("226", "File successfully transferred.", client_socket);
+  fclose(fp);
+  
+  return response;
 }

@@ -108,6 +108,9 @@ int main(int argc, char* argv[]){
       get_response(buffer, client_socket, 1);
       break;
     case PUT:
+      if(param == NULL) break;
+      send_passive(client_socket, &data_sockfd, ip);
+      handle_put(param, client_socket, data_sockfd);
       break;
     case PWD_:
       memset(&c, 0, sizeof(c));
