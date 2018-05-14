@@ -2,7 +2,7 @@
 #define __FTP_H__
 
 #include <stdio.h>
-#include "../Stream/Stream.h"
+#include "../Connect/Connect.h"
 
 #define CMD_LEN 5
 #define ARG_LEN 507
@@ -11,6 +11,13 @@
 #define NUM_USER_CMDS 10
 #define NUM_USERS 5
 #define PACKET_LEN 512
+#define BUF 1024
+#define BUF2 2048
+#define BUF3 4096
+#define MAX_CLIENTS 100
+#define PORT_NO 4444
+#define IP "127.0.0.1"
+#define BACKLOG 10
 
 /* Defined in FTP.c */
 extern const char* USERS[NUM_USERS];

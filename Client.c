@@ -6,9 +6,7 @@
 #include <limits.h>
 
 #include "FTP/FTP.h"
-#include "Stream/Connect.h"
-#include "Stream/Stream.h"
-
+#include "Connect/Connect.h"
 #define DEBUG 1
 
 int main(int argc, char* argv[]){

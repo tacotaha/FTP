@@ -6,23 +6,29 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <pthread.h>
+#include <limits.h>
+#include <assert.h>
 
-#include "Stream/Connect.h"
-#include "Stream/Stream.h"
+#include "Connect/Connect.h"
 #include "FTP/FTP.h"
+
+#define DEBUG 1
 
 int main(int argc, char* argv[]){
   int server_socket, client_socket,
-    client_count = 0, port = PORT_NO;
+    client_count = 0, port = PORT_NO,
+    bytes_rcvd = 0, bytes_sent = 0,
+    data_sock = INT_MIN;
+  char out_buffer[BUF], in_buffer[BUF],
+    user_name[BUF], cwd[BUF], response[BUF2], *ip = IP;
   struct sockaddr_in server;
-  char out_buffer[BUF], in_buffer[BUF];
-  pthread_t t;
-  char* ip = IP;
-  
+  Command c;
+
   memset(&server_socket,0x0,sizeof(server_socket));
   memset(in_buffer,0x0,sizeof(in_buffer));
   memset(out_buffer,0x0, sizeof(out_buffer));
+  memset(cwd, 0, sizeof(cwd));
+  getcwd(cwd, sizeof(cwd));
   
   server_socket = create_socket();
   server = create_socket_address(port, ip);
@@ -32,20 +38,69 @@ int main(int argc, char* argv[]){
 
   /*=======================================Main Loop========================================*/
   while( (client_socket = accept(server_socket,(struct sockaddr *)&server,&sckln))){
-    Server_Arg server_arg;
-    server_arg.sockfd = client_socket;
-    server_arg.ip = ip;
-    server_arg.port = port;
-    if(pthread_create(&t, NULL, handle_client, &server_arg) < 0){
-      perror("pthread_create()");
-      return -1;
-    }
     
-    if(client_socket < 0){
-      perror("accept()");
-      return -1;
-    }else {
-      printf("[+] Client %d connected! \n", client_count+1);
+    ++client_count;
+    
+    if(fork() == 0){
+      if((bytes_sent = send_response("220", welcome_message, client_socket)) <= 0){
+	perror("Welcome Message()\n");
+	close(client_socket);
+	exit(-1);
+      }
+      
+      /* Verify initial login status */
+      while(handle_login(client_socket));
+      
+      while((bytes_rcvd = get_command(&c, client_socket, DEBUG)) > 0){
+	memset(response, 0, sizeof(response));
+	switch(cmd_str_to_enum(c.cmd)){
+	case LIST:
+	  assert(data_sock != INT_MIN);
+	  handle_list(c.arg, client_socket, data_sock);
+	  break;
+	case DELE:
+	  handle_delete(c.arg, client_socket);
+	  break;
+	case RMD:
+	  handle_rm(c.arg, client_socket);
+	  break;
+	case MKD:
+	  handle_mkdir(c.arg, client_socket);
+	  break;
+	case CWD:
+	  assert(handle_cwd(c.arg, client_socket) > 0);
+	  break;
+	case PWD:
+	  assert(handle_pwd(cwd, client_socket) > 0);
+	  break;
+	case PASS:
+	  assert(handle_pass(c.arg, user_name, client_socket) > 0);
+	  break;
+	case RETR:
+	  assert(data_sock != INT_MIN);
+	  handle_retr(c.arg, client_socket, data_sock);
+	  break;
+	case STOR:
+	  assert(data_sock != INT_MIN);
+	  handle_stor(c.arg, client_socket, data_sock);
+	  break;
+	case USER:
+	  assert(handle_user(c.arg, user_name, client_socket) > 0);
+	  break;
+	case PASV:
+	  data_sock = handle_pasv(port, ip, client_socket);
+	  break;
+	default:
+	  break;
+	}
+	memset(&c, 0, sizeof(Command));
+      }
+      
+      if(bytes_rcvd == 0){
+	printf("Client %d disconnected\n", client_socket);
+	fflush(stdout);
+      } else if(bytes_rcvd == -1)
+	perror("recv()");   
     }
   }
   

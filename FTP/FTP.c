@@ -11,8 +11,6 @@
 #include <sys/sendfile.h>
 #include <time.h>
 
-#include "../Stream/Stream.h"
-#include "../Stream/Connect.h"
 #include "FTP.h"
 
 const char* USERS[NUM_USERS] = {"Euclid", "Newton", "Gauss", "Euler", "Hilbert"};
@@ -68,6 +66,7 @@ int send_command(const char* cmnd, const char* arg, int sockfd){
 void build_command(Command* command, const char* cmd, const char* arg){
   size_t i = 0;
   memset(command, 0, sizeof(Command));
+
   for(i = 0; i < strlen(cmd) && i < CMD_LEN; ++i)
     command->cmd[i] = cmd[i];
   command->cmd[i] = 0x0;
@@ -107,7 +106,6 @@ int read_command(Command* command, FILE* fp){
 int get_command(Command* command, int sockfd, int print){
   char buffer[MSG_LEN], *token;
   int bytes_rcvd = recv(sockfd, buffer, PACKET_LEN, 0);
-  
   if(bytes_rcvd > 0){
     buffer[bytes_rcvd] = 0;
     if(print)
@@ -142,7 +140,6 @@ const char* cmd_enum_to_str(COMMAND_ENUM cmd_enum){
 int handle_login(int sockfd){
   Command c;
   
-  /* Get user name (or die trying) */
   get_command(&c, sockfd, 1);
   while((strcmp(c.cmd, "USER") != 0)){
     send_response("332", "Need account for login", sockfd);
