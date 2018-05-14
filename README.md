@@ -37,4 +37,4 @@ An implementation of the File Transfer Protocol: https://tools.ietf.org/html/rfc
  
  ## Example
 ```[machine1@192.168.0.19] $./server -p 4445 #Run server on machine1 listening on port 4445```
-```[machine1@192.168.0.20] $./client -i 192.168.0.19 -p 4445 #Connect to port 4445 on machine1```
+```[machine2@192.168.0.20] $./client -i 192.168.0.19 -p 4445 #Connect to port 4445 on machine1```
