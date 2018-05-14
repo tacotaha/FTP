@@ -20,18 +20,17 @@ int main(int argc, char* argv[]){
     bytes_rcvd = 0, bytes_sent = 0,
     data_sock = INT_MIN;
   char out_buffer[BUF], in_buffer[BUF],
-    user_name[BUF], cwd[BUF], response[BUF2], *ip = IP;
+    user_name[BUF], cwd[BUF], response[BUF2];
+  const char* ip = "0.0.0.0";
   struct sockaddr_in server;
   Command c;
-
+  
   for(int i = 1; i < argc; i += 2)
-    if(!strcmp(argv[i],"-i") && argc >= i + 1)
-      ip = argv[i + 1];
-    else if(!strcmp(argv[i],"-p") && argc >= i + 1)
+    if(!strcmp(argv[i],"-p") && argc >= i + 1)
       port = atoi(argv[i + 1]);
     else{
-      printf("Usage: %s [-i] ip_addr [-p] port [-c]\n", argv[0]);
-      printf("Default: ip = 127.0.0.0.1, port = 4444\n");
+      printf("Usage: %s [-p] port\n", argv[0]);
+      printf("Default port = 4444\n");
       exit(0);
     }
   
@@ -50,7 +49,6 @@ int main(int argc, char* argv[]){
   /*=======================================Main Loop========================================*/
   while( (client_socket = accept(server_socket,(struct sockaddr *)&server,&sckln))){
     
-    ++client_count;
     
     if(fork() == 0){
       if((bytes_sent = send_response("220", welcome_message, client_socket)) <= 0){
@@ -112,7 +110,8 @@ int main(int argc, char* argv[]){
 	fflush(stdout);
       } else if(bytes_rcvd == -1)
 	perror("recv()");   
-    }
+    }else
+      ++client_count;
   }
   
   close(server_socket);

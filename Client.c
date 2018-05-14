@@ -21,7 +21,7 @@ int main(int argc, char* argv[]){
     else if(!strcmp(argv[i],"-p") && argc >= i + 1)
       port = atoi(argv[i + 1]);
     else{
-      printf("Usage: %s [-i] ip_addr [-p] port [-c]\n", argv[0]);
+      printf("Usage: %s [-i] ip_addr [-p] port\n", argv[0]);
       printf("Default: ip = 127.0.0.0.1, port = 4444\n");
       exit(0);
     }
