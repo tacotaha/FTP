@@ -37,10 +37,7 @@ void* handle_client(void* args){
   while((bytes_rcvd = get_command(&c, client_socket, DEBUG)) > 0){
     memset(response, 0, sizeof(response));
     switch(cmd_str_to_enum(c.cmd)){
-    case ABOR:
-      break;
     case LIST:
-      /* Make sure PASV was called at some point before this*/
       assert(data_sock != INT_MIN);
       handle_list(c.arg, client_socket, data_sock);
       break;
@@ -54,33 +51,13 @@ void* handle_client(void* args){
       handle_mkdir(c.arg, client_socket);
       break;
     case CWD:
-      if(chdir(c.arg) < 0){
-	sprintf(response, "Can't change directory to: \"%s\": No such file or directory", c.arg);
-	send_response("550",response, client_socket);
-      }else{
-	memset(cwd, 0, sizeof(cwd));
-	getcwd(cwd, sizeof(cwd));
-	
-	sprintf(response, "OK. Current directory is: \"%s\"", cwd);
-	send_response("250",response, client_socket);
-      }	
+      assert(handle_cwd(c.arg, client_socket) > 0);
       break;
     case PWD:
-      sprintf(response, "\"%s\" is your current location.", cwd);
-      send_response("257", response, client_socket);
+      assert(handle_pwd(cwd, client_socket) > 0);
       break;
     case PASS:
-      for(size_t i = 0; i < NUM_USERS + 1; ++i)
-	if(i == NUM_USERS)
-	  send_response("430", "Invalid Password", client_socket);
-	else if(strcmp(PASSWORDS[i], c.arg) == 0 && user_name == USERS[i]){
-	  send_response("230", "User logged in, proceed.", client_socket);
-	  break;
-	}
-      break;
-    case PORT:
-      break;
-    case QUIT:
+      assert(handle_pass(c.arg, user_name, client_socket) > 0);
       break;
     case RETR:
       assert(data_sock != INT_MIN);
@@ -88,22 +65,10 @@ void* handle_client(void* args){
       break;
     case STOR:
       assert(data_sock != INT_MIN);
-      printf("ARG: %s\n", c.arg);
       handle_stor(c.arg, client_socket, data_sock);
       break;
-    case SYST:
-      break;
-    case TYPE:
-      break;
     case USER:
-      for(size_t i = 0; i < NUM_USERS + 1; ++i)
-	if(i == NUM_USERS)
-	  send_response("430", "Invalid User name", client_socket);
-	else if(strcmp(USERS[i], c.arg) == 0){
-          strcpy(user_name, USERS[i]);
-	  send_response("331", "User name okay, need password", client_socket);
-	  break;
-	}
+      assert(handle_user(c.arg, user_name, client_socket) > 0);
       break;
     case PASV:
       data_sock = handle_pasv(port, ip, client_socket);

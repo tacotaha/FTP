@@ -7,7 +7,7 @@
 #define CMD_LEN 5
 #define ARG_LEN 507
 #define MSG_LEN CMD_LEN + ARG_LEN
-#define NUM_COMMANDS 16
+#define NUM_COMMANDS 12
 #define NUM_USER_CMDS 10
 #define NUM_USERS 5
 #define PACKET_LEN 512
@@ -20,7 +20,6 @@ extern const char* COMMAND_STRING[NUM_COMMANDS];
 extern const char* USER_CMD_STRING[NUM_USER_CMDS];
 
 typedef enum Command_Enum{
-  ABOR = 0, 
   LIST,
   DELE,
   RMD,
@@ -28,18 +27,15 @@ typedef enum Command_Enum{
   CWD,
   PWD,
   PASS,
-  PORT,
   QUIT,
   RETR,
   STOR,
-  SYST,
-  TYPE,
   USER,
   PASV
 }COMMAND_ENUM;
 
 typedef enum User_Command_Enum{
-  LS = 0,
+  LS,
   CD,
   DELETE,
   GET,
@@ -73,9 +69,9 @@ int get_response(char* buffer, int sockfd, int print);
   @param command : A nonempty command struct
   @param sockfd  : The socket file descriptor associated with the server.
   @return int    : The number of bytes sent to the server, or a int < 0 
-                   if there occured an error.
+                   if there occurred an error.
  */
-int send_command(const Command* command, int sockfd);
+int send_command(const char* cmd, const char* arg, int sockfd);
 
 /*
   Send a response to the client containing a status code followed by a message
@@ -84,7 +80,7 @@ int send_command(const Command* command, int sockfd);
   @param msg     : Message to accompany the status code
   @param sockfd  : The socket file descriptor associated with the recipient
   @return int    : The number of bytes sent to the server, 
-  		   or an int < 0 if there occured an error
+  		   or an int < 0 if there occurred an error
  */
 int send_response(const char* status, const char* msg, int sockfd);
 
@@ -103,9 +99,9 @@ int read_command(Command* command, FILE* fp);
   
   @param command : A nonempty command struct.
   @param sockfd  : The socket file descriptor associated with the server.
-  @param print   : A boolean value specifying wheather or not to print the response.
+  @param print   : A Boolean value specifying whether or not to print the response.
   @return int    : The number of bytes sent to the server, or a int < 0 
-                   if there occured an error.
+                   if there occurred an error.
  */
 int get_command(Command* command, int sockfd, int print);
 
@@ -116,7 +112,7 @@ int get_command(Command* command, int sockfd, int print);
   @param cmd     : C-string representing the command
   @param arg     : Argument accompanying the command.
  */
-void build_command(Command* command, char* cmd, char* arg);
+void build_command(Command* command, const char* cmd, const char* arg);
 
 /*
   Handle user login to the server
@@ -130,7 +126,7 @@ int handle_login(int sockfd);
   Convert a command's C-string representation to it's 
   corresponding enum representation.
   
-  @param cmd_str   : The C-string represention of the command. 
+  @param cmd_str   : The C-string representation of the command. 
                      Must be an element of COMMAND_STRING.
   @return CMD_ENUM : The Enum representation of the command.
                      -1 if no such command.
@@ -141,7 +137,7 @@ COMMAND_ENUM cmd_str_to_enum(const char* cmd_str);
   Convert a command's Enum representation to it's 
   corresponding C-string representation.
   
-  @param cmd_enum     : An enum represention of the command. 
+  @param cmd_enum     : An enum representation of the command. 
                         Must be an element of COMMAND_ENUM.
   @return const char* : The C-string representation of the command.
                         Must be an element of COMMAND_STRING.
@@ -153,9 +149,9 @@ const char* cmd_enum_to_str(COMMAND_ENUM cmd_enum);
   Convert a user command's C-string representation to it's 
   corresponding enum representation.
   
-  @param cmd_str        : The C-string represention of the command. 
+  @param cmd_str        : The C-string representation of the command. 
                           Must be an element of USER_CMD_STRING.
-  @return USER_CMD_ENUM : The Enum representation of the cnnommand.
+  @return USER_CMD_ENUM : The Enum representation of the command.
                           -1 if no such command.
  */
 USER_CMD_ENUM user_cmd_str_to_enum(char* cmd_str);
@@ -164,7 +160,7 @@ USER_CMD_ENUM user_cmd_str_to_enum(char* cmd_str);
   Convert a user command's Enum representation to it's 
   corresponding C-string representation.
   
-  @param cmd_enum     : An enum represention of the command. 
+  @param cmd_enum     : An enum representation of the command. 
                         Must be an element of COMMAND_ENUM.
   @return const char* : The C-string representation of the command.
                         Must be an element of USER_CMD_STRING.
@@ -180,7 +176,7 @@ const char* user_cmd_enum_to_str(USER_CMD_ENUM cmd_enum);
   connected to the data port after this is exits!
   
   @param cmd_port : The port command port no.
-  @param ip       : C-string represenation of the ip addr
+  @param ip       : C-string representation of the ip addr
   @param sockfd   : The socket file descriptor associated with the cmd port.
   @return int     : The data socket file descriptor
 */
@@ -194,24 +190,127 @@ int handle_pasv(int cmd_port, const char* ip, int sockfd);
 */
 int data_port_connect(int sockfd, char* ip);
 
-/* Server Functions for handling each command each have the format...
-   @param arg    : The null-terminated paramater of the command, usually
-                   the same as command->arg.
-   @param sockfd : The socket file descriptor of the associated client.
-   @return int   : Status code
+/* 
+   Cross-check provided password against the elements of PASSWORDS
+   @param arg       : The user-provided password
+   @param user_name : The corresponding user name
+   @param sockfd    : The client socket file descriptor
+   @return int      : < 0 on failure, success otherwise
 */
+int handle_pass(const char* arg, const char* user_name, int sockfd);
 
-int handle_pass(const char* arg, int sockfd);
-int handle_port(char* arg, int sockfd, int* data_port);
-int handle_list(char* arg, int sockfd, int data_sockfd);
-int handle_ls(char* arg, int sockfd, int data_sockfd);
-int handle_rm(char* arg, int sockfd);
-int handle_delete(char* arg, int sockfd);
-int handle_mkdir(char* arg, int sockfd);
-int handle_get(char* arg, int client, int data);
-int handle_retr(char* arg, int client, int data);
-int send_passive(int client_socket, int* data_socket, char* ip);
-int handle_stor(char* arg, int client, int data);
-int handle_put(char* arg, int client, int data);
+/* 
+   Cross-check provided username against the elements of USERS
+   @param arg       : The user-provided username
+   @param user_name : The corresponding user name (to be saved by caller)
+   @param sockfd    : The client socket file descriptor
+   @return int      : < 0 on failure, success otherwise
+*/
+int handle_user(const char* arg, char* user_name, int client_socket);
 
+/* 
+   Send the contents of the directory arg to the client.
+   @param arg         : The path of the directory being listed
+   @param sockfd      : The client socket file descriptor
+   @param data_sockfd : The data socket file descriptor
+   @return int        : < 0 on failure, success otherwise
+*/
+int handle_list(const char* arg, int sockfd, int data_sockfd);
+
+/* 
+   Receive the contents of the directory arg from the server.
+   @param arg         : The path of the directory being listed
+   @param sockfd      : The client socket file descriptor
+   @param data_sockfd : The data socket file descriptor
+   @return int        : < 0 on failure, success otherwise
+*/
+int handle_ls(const char* arg, int sockfd, int data_sockfd);
+
+/* 
+   Remove the directory specified by arg.
+   @param arg         : The path of the directory to be removed
+   @param sockfd      : The client socket file descriptor
+   @return int        : # of bytes transmitted in response
+*/
+int handle_rm(const char* arg, int sockfd);
+
+/* 
+   Remove the file specified by arg.
+   @param arg         : The path of the file to be deleted
+   @param sockfd      : The client socket file descriptor
+   @return int        : # of bytes transmitted in response
+*/
+int handle_delete(const char* arg, int sockfd);
+
+/* 
+   Create a directory by the name of arg in the cwd
+   @param arg         : The name of the directory to be created
+   @param sockfd      : The client socket file descriptor
+   @return int        : # of bytes transmitted in response
+*/
+int handle_mkdir(const char* arg, int sockfd);
+
+/* 
+   Retrieve a the file specified by arg from the server
+   @param arg         : The file to be retrieved
+   @param sockfd      : The client socket file descriptor
+   @param data_sockfd : The data socket file descriptor
+   @return int        : # of bytes transmitted in response
+*/
+int handle_get(const char* arg, int sockfd, int data_sockfd);
+
+/* 
+   Send the current working directory to the client.
+   @param arg         : The current working directory
+   @param sockfd      : The client socket file descriptor
+   @return int        : # of bytes transmitted in response
+*/
+int handle_pwd(const char* arg, int sockfd);
+
+/* 
+   Send the file specified by arg to the client.
+   @param arg         : The name of the file to be retrieved.
+   @param sockfd      : The client socket file descriptor.
+   @param data_sockfd : The data socket file descriptor
+   @return int        : # of bytes transmitted in response.
+*/
+int handle_retr(const char* arg, int sockfd, int data_sockfd);
+
+/* 
+   Send the server the passive command and connect to the 
+   port in its response.
+   @param sockfd      : The client socket file descriptor.
+   @param data_sockfd : The addr of the data socket file descriptor
+   @return int        : The data socket file descriptor
+*/
+int send_passive(int sockfd, int* data_sockfd, char* ip);
+
+/* 
+   Retrieve the file arg from the client
+   @param arg         : The name of the file to be stored.
+   @param sockfd      : The client socket file descriptor.
+   @param data_sockfd : The data socket file descriptor
+   @return int        : # of bytes transmitted in response.
+*/
+int handle_stor(char* arg, int sockfd, int data_sockfd);
+
+/* 
+   Send the file specified by arg to the server.
+   @param arg         : The name of the file to be sent.
+   @param sockfd      : The client socket file descriptor.
+   @param data_sockfd : The data socket file descriptor
+   @return int        : # of bytes transmitted in response.
+*/
+int handle_put(char* arg, int sockfd, int data_sockfd);
+
+/* 
+   Change the server's current working directory
+   @param arg         : The path of the new working dir.
+   @param sockfd      : The client socket file descriptor.
+   @return int        : # of bytes transmitted in response.
+*/
+int handle_cwd(const char* arg, int client);
+
+/*Print a list of available commands to the user*/
+void handle_help(void);
 #endif

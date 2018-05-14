@@ -16,10 +16,8 @@ int main(int argc, char* argv[]){
   struct sockaddr_in server_addr;
   char buffer[BUF], user_name[BUF], *ip = IP,
     password[BUF], *input, *param, *cmd;
-  Command c, c2;
   
   memset(&client_socket,0,sizeof(client_socket));
-  memset(&c, 0, sizeof(c));
   memset(buffer, 0, sizeof(buffer));
   client_socket = create_socket();
   server_addr = create_socket_address(port, ip);
@@ -33,35 +31,21 @@ int main(int argc, char* argv[]){
       printf("Username: ");
       fgets(user_name, sizeof(user_name), stdin);
       char* user = strtok(user_name, "\n");
-      build_command(&c, "USER", user);
-      if(send_command(&c, client_socket) < 0){
-	perror("USER_NAME: send_command()");
-	exit(1);
-      }
+      assert(send_command("USER", user, client_socket) > 0);
       memset(buffer, 0, sizeof(buffer));
     }while(get_response(buffer, client_socket, DEBUG) != 331);
-    memset(&c, 0, sizeof(c));
     printf("Password: ");
     fgets(password, sizeof(password), stdin);
     char* pass = strtok(password, "\n");
-    build_command(&c, "PASS", pass);
-    if(send_command(&c, client_socket) < 0){
-      perror("Password: send_command()");
-      exit(1);
-    }
+    assert(send_command("PASS", pass, client_socket) > 0);
     memset(buffer, 0, sizeof(buffer));
     response = get_response(buffer, client_socket, DEBUG);
-    memset(buffer, 0, sizeof(buffer));
   }
-
-  assert(response == 230);
-
+  
   do{
-    memset(&c, 0, sizeof(c));
-    memset(&c2, 0, sizeof(c2));
     printf("FTP > ");
     fgets(buffer, sizeof(buffer), stdin);
-
+    
     input = strtok(buffer, "\n");
     
     if(input[0] == '!'){
@@ -81,17 +65,13 @@ int main(int argc, char* argv[]){
 	handle_ls(param, client_socket, data_sockfd);
       break;
     case CD:
-      memset(&c, 0, sizeof(c));
-      build_command(&c, "CWD", param == NULL ? getenv("HOME") : param);
-      send_command(&c, client_socket);
-      get_response(buffer, client_socket, 1);
+      assert(send_command("CWD", (param == NULL ? getenv("HOME") : param), client_socket) > 0);
+      get_response(buffer, client_socket, DEBUG);
       break;
     case DELETE:
       if(param == NULL) break;
-      memset(&c, 0, sizeof(c));
-      build_command(&c, "DELE", param);
-      send_command(&c, client_socket);
-      get_response(buffer, client_socket, 1);
+      assert(send_command("DELE", param, client_socket) > 0);
+      get_response(buffer, client_socket, DEBUG);
       break;
     case GET:
       if(param == NULL) break;
@@ -99,13 +79,12 @@ int main(int argc, char* argv[]){
       handle_get(param, client_socket, data_sockfd);
       break;
     case HELP:
+      handle_help();
       break;
     case MKDIR:
       if(param == NULL) break;
-      memset(&c, 0, sizeof(c));
-      build_command(&c, "MKD", param);
-      send_command(&c, client_socket);
-      get_response(buffer, client_socket, 1);
+      assert(send_command("MKD", param, client_socket) > 0);
+      get_response(buffer, client_socket, DEBUG);
       break;
     case PUT:
       if(param == NULL) break;
@@ -113,11 +92,8 @@ int main(int argc, char* argv[]){
       handle_put(param, client_socket, data_sockfd);
       break;
     case PWD_:
-      memset(&c, 0, sizeof(c));
-      memset(buffer, 0, sizeof(buffer));
-      build_command(&c, "PWD", "");
-      send_command(&c, client_socket);
-      get_response(buffer, client_socket, 1);
+      assert(send_command("PWD", "", client_socket) > 0);
+      get_response(buffer, client_socket, DEBUG);
       break;
     case QUIT_:
       printf("Exiting...Goodbye Now!\n");
@@ -125,12 +101,11 @@ int main(int argc, char* argv[]){
       break;
     case RMDIR:
       if(param == NULL) break;
-      memset(&c, 0, sizeof(c));
-      build_command(&c, "RMD", param);
-      send_command(&c, client_socket);
-      get_response(buffer, client_socket, 1);
+      assert(send_command("RMD", param, client_socket) > 0);
+      get_response(buffer, client_socket, DEBUG);
       break;
     default:
+      printf("Invalid Command. See help for more information.\n");
       break;
     }
     memset(buffer, 0, sizeof(buffer));
