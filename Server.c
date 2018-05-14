@@ -24,6 +24,17 @@ int main(int argc, char* argv[]){
   struct sockaddr_in server;
   Command c;
 
+  for(int i = 1; i < argc; i += 2)
+    if(!strcmp(argv[i],"-i") && argc >= i + 1)
+      ip = argv[i + 1];
+    else if(!strcmp(argv[i],"-p") && argc >= i + 1)
+      port = atoi(argv[i + 1]);
+    else{
+      printf("Usage: %s [-i] ip_addr [-p] port [-c]\n", argv[0]);
+      printf("Default: ip = 127.0.0.0.1, port = 4444\n");
+      exit(0);
+    }
+  
   memset(&server_socket,0x0,sizeof(server_socket));
   memset(in_buffer,0x0,sizeof(in_buffer));
   memset(out_buffer,0x0, sizeof(out_buffer));

@@ -13,8 +13,8 @@
 
 #include "FTP.h"
 
-const char* USERS[NUM_USERS] = {"Euclid", "Newton", "Gauss", "Euler", "Hilbert"};
-const char* PASSWORDS[NUM_USERS] = {"geometry", "calculus", "electrostatics", "konigsberg", "spaces"};
+const char* USERS[NUM_USERS] = {"Euclid", "Newton", "Gauss", "Euler", "test"};
+const char* PASSWORDS[NUM_USERS] = {"geometry", "calculus", "electrostatics", "konigsberg", "test"};
 const char* welcome_message = "-=(<*>)=-.:. (( Welcome to The FTP server)) .:.-=(<*>)=-";
 const char* COMMAND_STRING[NUM_COMMANDS] = {
   "LIST", /* List file and directories */
