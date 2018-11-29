@@ -45,8 +45,7 @@ int main(int argc, char* argv[]) {
   listen_for_connection(server_socket, BACKLOG);
   socklen_t sckln = sizeof(struct sockaddr_in);
 
-  /*=======================================Main
-   * Loop========================================*/
+  /*=======================================Main Loop========================================*/
   while ((client_socket =
               accept(server_socket, (struct sockaddr*)&server, &sckln))) {
     if (fork() == 0) {
