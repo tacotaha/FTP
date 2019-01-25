@@ -57,8 +57,7 @@ int main(int argc, char* argv[]) {
       }
 
       /* Verify initial login status */
-      while (handle_login(client_socket))
-        ;
+      while (handle_login(client_socket));
 
       while ((bytes_rcvd = get_command(&c, client_socket, DEBUG)) > 0) {
         memset(response, 0, sizeof(response));
