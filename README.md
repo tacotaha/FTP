@@ -24,7 +24,7 @@ An implementation of the File Transfer Protocol: https://tools.ietf.org/html/rfc
  
  Simply clone this repository and use the Makefile to build
  
- ```git clone https://github.com/tazzaoui/FTP.git && cd FTP && make```
+ ```git clone https://github.com/tacotaha/FTP.git && cd FTP && make```
  
  You'll end up with two executables, namely ```server``` and ```client```
  
